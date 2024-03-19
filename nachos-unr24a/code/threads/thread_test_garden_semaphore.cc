@@ -4,10 +4,11 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-#include "thread_test_garden.hh"
+#include "thread_test_garden_semaphore.hh"
 #include "system.hh"
 
 #include <stdio.h>
+#include "semaphore.hh"
 
 static const unsigned NUM_TURNSTILES = 2;
 static const unsigned ITERATIONS_PER_TURNSTILE = 50;
@@ -21,6 +22,7 @@ Turnstile(void *n_)
 
   for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
   {
+
     int temp = count;
     currentThread->Yield();
     printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
@@ -32,13 +34,14 @@ Turnstile(void *n_)
   done[*n] = true;
 }
 
-void ThreadTestGarden()
+void ThreadTestGardenSemaphore()
 {
   // Launch a new thread for each turnstile
   //(except one that will be run by the main thread)
 
   char **names = new char *[NUM_TURNSTILES];
   unsigned *values = new unsigned[NUM_TURNSTILES];
+  Semaphore *s = new Semaphore("turnstile", 1);
   for (unsigned i = 0; i < NUM_TURNSTILES; i++)
   {
     printf("Launching turnstile %u.\n", i);
@@ -71,4 +74,5 @@ void ThreadTestGarden()
   }
   delete[] values;
   delete[] names;
+  delete s;
 }

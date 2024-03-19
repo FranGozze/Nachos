@@ -22,13 +22,13 @@ bool threadDone[] = {false, false, false, false};
 #ifdef SEMAPHORE_TEST
 #include "semaphore.hh"
 #include "lib/utility.hh"
-Semaphore *s = new Semaphore("simpleTestSem", 3);
+Semaphore *s;
 #endif
 
 void SimpleThread(void *name_)
 {
 #ifdef SEMAPHORE_TEST
-  Semaphore *s = name_;
+  // Semaphore *s = (Semaphore *)name_;
 #endif
   // If the lines dealing with interrupts are commented, the code will
   // behave incorrectly, because printf execution may cause race
@@ -37,11 +37,11 @@ void SimpleThread(void *name_)
   {
 #ifdef SEMAPHORE_TEST
 
-    DEBUG("s", "Thread %s P", currentThread->GetName());
-    s->P();
+    DEBUG('s', "Thread %s P", currentThread->GetName());
+    // s->P();
     printf("*** (Semaphore) Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
-    DEBUG("s", "Thread %s V", currentThread->GetName());
-    s->V();
+    DEBUG('s', "Thread %s V", currentThread->GetName());
+    // s->V();
 #endif
 #ifndef SEMAPHORE_TEST
     printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
@@ -70,10 +70,11 @@ void ThreadTestSimple()
   newThread[3] = new Thread("5");
 
 #ifdef SEMAPHORE_TEST
-  newThread[0]->Fork(SimpleThread, (void *)s);
-  newThread[1]->Fork(SimpleThread, (void *)s);
-  newThread[2]->Fork(SimpleThread, (void *)s);
-  newThread[3]->Fork(SimpleThread, (void *)s);
+  // s = new Semaphore("simpleTestSem", 3);
+  newThread[0]->Fork(SimpleThread, NULL);
+  newThread[1]->Fork(SimpleThread, NULL);
+  newThread[2]->Fork(SimpleThread, NULL);
+  newThread[3]->Fork(SimpleThread, NULL);
 #endif
 #ifndef SEMAPHORE_TEST
   newThread[0]->Fork(SimpleThread, NULL);
@@ -98,6 +99,8 @@ void ThreadTestSimple()
     for (int i = 0; i < threadsAmount; i++)
       threadFinished &= threadDone[i];
   }
-
+#ifdef SEMAPHORE_TEST
+  delete s;
+#endif
   printf("Test finished\n");
 }
