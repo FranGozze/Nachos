@@ -15,6 +15,8 @@ static const unsigned ITERATIONS_PER_TURNSTILE = 50;
 static bool done[NUM_TURNSTILES];
 static int count;
 
+static Semaphore *s = new Semaphore("testGardenSemaphore", 1);
+
 static void
 Turnstile(void *n_)
 {
@@ -22,12 +24,13 @@ Turnstile(void *n_)
 
   for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
   {
-
+    s->P();
     int temp = count;
     currentThread->Yield();
     printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
     printf("Turnstile %u back with temp=%u.\n", *n, temp);
     count = temp + 1;
+    s->V();
     currentThread->Yield();
   }
   printf("Turnstile %u finished. Count is now %u.\n", *n, count);
@@ -41,7 +44,6 @@ void ThreadTestGardenSemaphore()
 
   char **names = new char *[NUM_TURNSTILES];
   unsigned *values = new unsigned[NUM_TURNSTILES];
-  Semaphore *s = new Semaphore("turnstile", 1);
   for (unsigned i = 0; i < NUM_TURNSTILES; i++)
   {
     printf("Launching turnstile %u.\n", i);
