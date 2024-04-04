@@ -17,7 +17,8 @@
 #ifndef NACHOS_THREADS_LOCK__HH
 #define NACHOS_THREADS_LOCK__HH
 
-
+#include "thread.hh"
+#include "semaphore.hh"
 /// This class defines a “lock”.
 ///
 /// A lock can have two states: free and busy. Only two operations are
@@ -29,36 +30,36 @@
 ///
 /// For convenience, nobody but the thread that holds the lock can free it.
 /// There is no operation for reading the state of the lock.
-class Lock {
+class Lock
+{
 public:
+  /// Constructor: set up the lock as free.
+  Lock(const char *debugName);
 
-    /// Constructor: set up the lock as free.
-    Lock(const char *debugName);
+  ~Lock();
 
-    ~Lock();
+  /// For debugging.
+  const char *GetName() const;
 
-    /// For debugging.
-    const char *GetName() const;
+  /// Operations on the lock.
+  ///
+  /// Both must be *atomic*.
+  void Acquire();
+  void Release();
 
-    /// Operations on the lock.
-    ///
-    /// Both must be *atomic*.
-    void Acquire();
-    void Release();
-
-    /// Returns `true` if the current thread is the one that possesses the
-    /// lock.
-    ///
-    /// Useful for checks in `Release` and in condition variables.
-    bool IsHeldByCurrentThread() const;
+  /// Returns `true` if the current thread is the one that possesses the
+  /// lock.
+  ///
+  /// Useful for checks in `Release` and in condition variables.
+  bool IsHeldByCurrentThread() const;
 
 private:
+  /// For debugging.
+  const char *name;
 
-    /// For debugging.
-    const char *name;
-
-    // Add other needed fields here.
+  // Add other needed fields here.
+  Thread *lockOwner;
+  Semaphore *sem;
 };
-
 
 #endif
