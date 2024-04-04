@@ -14,39 +14,47 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "lock.hh"
 
-
+extern Thread *currentThread;
 /// Dummy functions -- so we can compile our later assignments.
 
 Lock::Lock(const char *debugName)
-{}
+{
+  name = debugName;
+  sem = new Semaphore(debugName, 1);
+}
 
 Lock::~Lock()
-{}
+{
+  delete sem;
+}
 
 const char *
 Lock::GetName() const
 {
-    return name;
+  return name;
 }
 
-void
-Lock::Acquire()
+void Lock::Acquire()
 {
-    // TODO
+  sem->P();
+  lockOwner = currentThread;
 }
 
-void
-Lock::Release()
+void Lock::Release()
 {
-    // TODO
+  if (IsHeldByCurrentThread())
+  {
+    lockOwner = NULL;
+    sem->V();
+  }
 }
 
-bool
-Lock::IsHeldByCurrentThread() const
+bool Lock::IsHeldByCurrentThread() const
 {
-    // TODO
-    return false;
+  ASSERT(lockOwner == currentThread);
+  return lockOwner == currentThread;
+  // // TODO
+  // return false;
 }

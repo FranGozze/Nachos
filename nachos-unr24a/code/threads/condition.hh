@@ -17,9 +17,7 @@
 #ifndef NACHOS_THREADS_CONDITION__HH
 #define NACHOS_THREADS_CONDITION__HH
 
-
 #include "lock.hh"
-
 
 /// This class defines a “condition variable”.
 ///
@@ -53,31 +51,31 @@
 /// The “Mesa” style is somewhat simpler to implement, but it does not
 /// guarantee that the woken thread recover the control of the lock
 /// immediately.
-class Condition {
+class Condition
+{
 public:
+  /// Constructor: indicate which lock the condition variable belongs to.
+  Condition(const char *debugName, Lock *conditionLock);
 
-    /// Constructor: indicate which lock the condition variable belongs to.
-    Condition(const char *debugName, Lock *conditionLock);
+  ~Condition();
 
-    ~Condition();
+  const char *GetName() const;
 
-    const char *GetName() const;
+  /// The three operations on condition variables.
+  ///
+  /// The thread that invokes any of these operations must hold the
+  /// corresponding lock; otherwise an error must occur.
 
-    /// The three operations on condition variables.
-    ///
-    /// The thread that invokes any of these operations must hold the
-    /// corresponding lock; otherwise an error must occur.
-
-    void Wait();
-    void Signal();
-    void Broadcast();
+  void Wait();
+  void Signal();
+  void Broadcast();
 
 private:
-
-    const char *name;
-
-    // Other needed fields are to be added here.
+  const char *name;
+  Lock *lock;
+  Semaphore *sem, *semWaiting;
+  int waiting;
+  // Other needed fields are to be added here.
 };
-
 
 #endif

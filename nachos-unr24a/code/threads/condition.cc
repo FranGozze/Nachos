@@ -14,43 +14,57 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "condition.hh"
-
 
 /// Dummy functions -- so we can compile our later assignments.
 ///
 
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
-    // TODO
+  name = debugName;
+  lock = conditionLock;
+  sem = new Semaphore(debugName, 1);
+  semWaiting = new Semaphore("", 1);
+  waiting = 0;
 }
 
 Condition::~Condition()
 {
-    // TODO
+  delete lock;
+  delete sem;
 }
 
 const char *
 Condition::GetName() const
 {
-    return name;
+  return name;
 }
 
-void
-Condition::Wait()
+void Condition::Wait()
 {
-    // TODO
+  semWaiting->P();
+  waiting++;
+  semWaiting->V();
+
+  lock->Release();
+  sem->P();
+  lock->Acquire();
+  semWaiting->P();
+  waiting--;
+  semWaiting->V();
 }
 
-void
-Condition::Signal()
+void Condition::Signal()
 {
-    // TODO
+  sem->V();
 }
 
-void
-Condition::Broadcast()
+void Condition::Broadcast()
 {
-    // TODO
+  semWaiting->P();
+  for (int i = 0; i < waiting; i++)
+  {
+    sem->V();
+  }
+  semWaiting->V();
 }
