@@ -32,19 +32,18 @@ void SimpleThread(void *name_)
   // conditions.
   for (unsigned num = 0; num < 10; num++)
   {
+
 #ifdef SEMAPHORE_TEST
     DEBUG('s', "Thread %s P\n", currentThread->GetName());
     s->P();
-    printf("*** (Semaphore) Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
-    DEBUG('s', "Thread %s V\n", currentThread->GetName());
-    s->V();
 #endif
-
-#ifndef SEMAPHORE_TEST
     printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
     currentThread->Yield();
-#endif
   }
+#ifdef SEMAPHORE_TEST
+  DEBUG('s', "Thread %s V\n", currentThread->GetName());
+  s->V();
+#endif
 
   if (strcmp(currentThread->GetName(), "main") != 0)
   {
