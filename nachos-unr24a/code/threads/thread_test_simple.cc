@@ -15,42 +15,40 @@
 /// * `name` points to a string with a thread name, just for debugging
 ///   purposes.
 
-const int threadsAmount = 5;
+const int threadsAmount = 4;
 
-bool threadDone[] = {false, false, false, false};
+bool threadDone[threadsAmount];
 
 #ifdef SEMAPHORE_TEST
 #include "semaphore.hh"
 #include "lib/utility.hh"
-Semaphore *s;
+static Semaphore *s = new Semaphore("simpleTestSem", 3);
 #endif
 
 void SimpleThread(void *name_)
 {
-#ifdef SEMAPHORE_TEST
-  // Semaphore *s = (Semaphore *)name_;
-#endif
   // If the lines dealing with interrupts are commented, the code will
   // behave incorrectly, because printf execution may cause race
   // conditions.
   for (unsigned num = 0; num < 10; num++)
   {
 #ifdef SEMAPHORE_TEST
-
-    DEBUG('s', "Thread %s P", currentThread->GetName());
-    // s->P();
+    DEBUG('s', "Thread %s P\n", currentThread->GetName());
+    s->P();
     printf("*** (Semaphore) Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
-    DEBUG('s', "Thread %s V", currentThread->GetName());
-    // s->V();
+    DEBUG('s', "Thread %s V\n", currentThread->GetName());
+    s->V();
 #endif
+
 #ifndef SEMAPHORE_TEST
     printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
     currentThread->Yield();
 #endif
   }
+
   if (strcmp(currentThread->GetName(), "main") != 0)
   {
-    int threadNum = atoi(currentThread->GetName()) - 2;
+    int threadNum = atoi(currentThread->GetName());
     threadDone[threadNum] = true;
   }
 
@@ -63,42 +61,28 @@ void SimpleThread(void *name_)
 /// calling `SimpleThread` on the current thread.
 void ThreadTestSimple()
 {
-  Thread *newThread[threadsAmount - 1];
-  newThread[0] = new Thread("2");
-  newThread[1] = new Thread("3");
-  newThread[2] = new Thread("4");
-  newThread[3] = new Thread("5");
 
-#ifdef SEMAPHORE_TEST
-  // s = new Semaphore("simpleTestSem", 3);
-  newThread[0]->Fork(SimpleThread, NULL);
-  newThread[1]->Fork(SimpleThread, NULL);
-  newThread[2]->Fork(SimpleThread, NULL);
-  newThread[3]->Fork(SimpleThread, NULL);
-#endif
-#ifndef SEMAPHORE_TEST
-  newThread[0]->Fork(SimpleThread, NULL);
-  newThread[1]->Fork(SimpleThread, NULL);
-  newThread[2]->Fork(SimpleThread, NULL);
-  newThread[3]->Fork(SimpleThread, NULL);
-#endif
-  //  for (int i = 0; i <= threadsAmount - 2; i++)
-  // {
-  //   char str[5];
-  //   sprintf(str, "%d", i + 2);
-  //   newThread[i] = new Thread(str);
-  //   newThread[i]->Fork(SimpleThread, NULL);
-  // }
+  char **names = new char *[threadsAmount];
+  for (unsigned i = 0; i < threadsAmount; i++)
+  {
+    names[i] = new char[16];
+    sprintf(names[i], "%u", i);
+
+    Thread *t = new Thread(names[i]);
+    t->Fork(SimpleThread, NULL);
+  }
 
   // the "main" thread also executes the same function
   SimpleThread(NULL);
 
   // Wait for all threads to finish if needed
-  for (bool threadFinished = false; threadFinished; currentThread->Yield())
+  for (bool threadFinished = false; !threadFinished; currentThread->Yield())
   {
+    threadFinished = true;
     for (int i = 0; i < threadsAmount; i++)
-      threadFinished &= threadDone[i];
+      threadFinished = threadFinished && threadDone[i];
   }
+
 #ifdef SEMAPHORE_TEST
   delete s;
 #endif

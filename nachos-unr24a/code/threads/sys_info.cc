@@ -9,7 +9,6 @@
 #include "machine/disk.hh"
 #include "machine/mmu.hh"
 
-static const unsigned MAGIC_NUMBER = 0x456789AB;
 static const unsigned MAGIC_SIZE = sizeof(int);
 
 static const unsigned DISK_SIZE = MAGIC_SIZE + NUM_SECTORS * SECTOR_SIZE;

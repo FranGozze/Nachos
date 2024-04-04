@@ -14,7 +14,7 @@
 9. Comente el efecto de las distintas banderas de depuración.
 10. ¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB?
 11. ¿Qué argumentos de linea de comandos admite Nachos? ¿Que efecto tiene la opcion-rs?
-12. Al ejecutar nachos -i, se obtiene informaci´on del sistema. Sin embargo está incompleta. Modifique el código para que se muestren los datos que faltan.
+12. Al ejecutar nachos -i, se obtiene información del sistema. Sin embargo está incompleta. Modifique el código para que se muestren los datos que faltan.
 13. ¿Cuál es la diferencia entre las clases List y SynchList?
 14. Modifique el caso de prueba simple del directorio threads para que se generen 5 hilos en lugar de 2.
 15. Modifique el caso de prueba para que estos cinco hilos utilicen un semaforo inicializado en 3. Esto debe ocurrir solo si se define la macro de compilacion SEMAPHORE TEST.
@@ -280,9 +280,9 @@
      - En la función Finish se llama a la función GetName, el cual se encuentra en el archivo thread.cc
      - En la función Finish se llama a la función Sleep, el cual se encuentra en el archivo thread.cc
 
-8. La macro ASSERT tiene un funcionamiento similar al definido en la libreria "assert.h" de c, es decir, chequea si la condicion es verdadera (en cuyo caso no hace nada), y en caso contrario corta el programa, muestra un mensaje con el lugar donde fallo
+8. La macro ASSERT tiene un funcionamiento similar al definido en la libreria "assert.h" de c, es decir, chequea si la condicion es verdadera (en cuyo caso no hace nada), y en caso contrario corta el programa, muestra un mensaje con el lugar donde fallo. \
 
-   Por otra parte, la macro DEBUG muestra en consola un mensaje junto a su flag (la cual debe estar prendida). Esto es util ya que se pueden poner mensajes en ciertas partes del codigo con flags especificas, las cuales solo se mostraran si al correr nachos se activan dichas flags (cosa util a la hora de debuggear)
+Por otra parte, la macro DEBUG muestra en consola un mensaje junto a su flag (la cual debe ser activada para ser mostrada en pantalla). Esto es util ya que se pueden poner mensajes en ciertas partes del codigo con flags especificas, las cuales solo se mostraran si al correr nachos se activan dichas flags (cosa util a la hora de debuggear)
 
 9. Comente el efecto de las distintas banderas de depuración.
 
@@ -296,8 +296,7 @@
 - `a` : usada en direcciones de memoria (requiere la bandera _USER_PROGRAM_).
 - `e` : usada en handleo de excepciones (requiere la bandera _USER_PROGRAM_).
 
-10. ¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB? \
-    Dichas constantes se definen en el makefile de userprog ("userprog/Makefile") en la variable DEFINE
+10. Dichas constantes se declaran en el makefile de userprog ("userprog/Makefile") en la variable DEFINE, y luego al compilar haciendo make, estas seran pasadas al compilador el cual se encargara de crear dichas constantes
 11. En la función main principal, la que se encuentra en /code/threads/main.cc se definen todas las flags que admite NACHOS
 
 - Opciones Generales
@@ -330,82 +329,214 @@
 - numPhysicalPages: el cual si esta la bandera USER_PROGRAM obtendremos el dato del metodo GetNumPhysicalPages y en caso contrario de la constante DEFAULT_NUM_PHYS_PAGESd definida en "machine/mmu.hh"
 - El tamaño de la memoria lo obtendremos de multiplicar numPhysicalPages \* PAGE_SIZE
 - SECTOR_SIZE, SECTORS_PER_TRACK, NUM_TRACKS, NUM_SECTORS: declaradas en "machine/disk.hh"
-- DISK_SIZE:
+- DISK_SIZE: esta constante la obtendremos de hacer la operacion MAGIC_SIZE + NUM_SECTORS \* SECTOR_SIZE, donde MAGIC_SIZE es sizeof(int), y las otras constantes fueron mencionadas anteriormente
 
-13. ¿Cuál es la diferencia entre las clases List y SynchList? \
-    Antes de mencionar la diferencia entre ambas clases, veamos que ambas se comportan como listas simplemente enlazadas (para ser mas concreto, List es una lista simplemente enlazada, y luego SynchList utiliza un elemento de dicho tipo). Dicho esto, la diferencia entre ambas es que SynchList es una lista que soporta concurrencia.
+13. Antes de mencionar la diferencia entre ambas clases, veamos que ambas se comportan como listas simplemente enlazadas (para ser mas concreto, List es una lista simplemente enlazada, y luego SynchList utiliza un elemento de dicho tipo). Dicho esto, la diferencia entre ambas es que SynchList es una lista que soporta concurrencia.
 
-14. Modifique el caso de prueba simple del directorio threads para que se generen 5 hilos en lugar de 2.
+14. Las modificaciones implementadas fueron las siguientes:
 
-15. La razón por la cual el resultado es erroneo es debido a un problema de concurrencia entre los dos hilos que representan a los molinetes. El error agrede se puede ver en la función Turnstile:
+- la creacion de las siguientes variables globales:
 
-```
-Turnstile(void *n_)
-{
-  unsigned *n = (unsigned *)n_;
+  ```
+    const int threadsAmount = 4;
+    bool threadDone [threadsAmount];
+  ```
 
-  for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
+- en lugar de las dos lineas de codigo donde se anteriormente se creaba y se llamaba a la funcion "SimpleThread", ahora tendremos:
+
+  ```
+  char **names = new char *[threadsAmount];
+  for (unsigned i = 0; i < threadsAmount; i++)
   {
-    int temp = count;
-    currentThread->Yield();
-    printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
-    printf("Turnstile %u back with temp=%u.\n", *n, temp);
-    count = temp + 1;
-    currentThread->Yield();
+    names[i] = new char[16];
+    sprintf(names[i], "%u", i);
+
+    Thread *t = new Thread(names[i]);
+    t->Fork(SimpleThread, NULL);
   }
-  printf("Turnstile %u finished. Count is now %u.\n", *n, count);
-  done[*n] = true;
-}
-```
+  ```
 
-Al momento de ejecutarse el jardín ornamental tenemos que el tramo de ejecución es:
+- En lugar del while donde esperabamos a que el 2 thread termine, ahora tendremos:
 
-- [Thread 1] int temp = count; / Si count = n, entonces ahora temp del Thread 1 es n
-- [Thread 1] currentThread->Yield(); / la función simula el cambio de hilo que realiza el CPU
-- [Thread 2] int temp = count; / Como count sigue siendo n, entonces temp del Thread 2 es n
-- [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
-- [Thread 1] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
-- [Thread 1] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
-- [Thread 1] count = temp + 1; / Se cambia count por n+1
-- [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
-- [Thread 2] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
-- [Thread 2] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
-- [Thread 2] count = temp + 1; / Se vuelve a guardar en count n+1
-- [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+  ```
+    for (bool threadFinished = false; !threadFinished; currentThread->Yield())
+    {
+      threadFinished = true;
+      for (int i = 0; i < threadsAmount; i++)
+        threadFinished = threadFinished && threadDone[i];
+    }
 
-De tal forma el valor de count terminará siendo la mitad, debido a que en cada paso ambos molinetes obtienen el mismo valor de count y por lo tanto terminan guardando el mismo valor \
-Para arreglar el problema sin cambiar el entorno, simplemente movemos el Yield una linea arriba, de tal forma el cambio de hilo se realiza antes de la declaración de temp y por lo tanto se obtiene el valor modificado por el otro hilo
+  ```
 
-```
-Turnstile(void *n_)
-{
-  unsigned *n = (unsigned *)n_;
+- Y por ultimo, en la funcion SimpleThread, modificaremos el if que cambiaba el valor de la bandera que indicaba que el 2 hilo terminaba por:
 
-  for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
+  ```
+  if (strcmp(currentThread->GetName(), "main") != 0)
   {
-    currentThread->Yield();
-    int temp = count;
-    printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
-    printf("Turnstile %u back with temp=%u.\n", *n, temp);
-    count = temp + 1;
-    currentThread->Yield();
+    int threadNum = atoi(currentThread->GetName());
+    threadDone[threadNum] = true;
   }
-  printf("Turnstile %u finished. Count is now %u.\n", *n, count);
-  done[*n] = true;
-}
+  ```
+
+15. Para este ejercicio las modificaciones uqe implementamos fueron las siguientes:
+
+- Primero en la seccion de definiciones agregaremos lo siguiente:
+
+  ```
+  #ifdef SEMAPHORE_TEST
+    #include "semaphore.hh"
+    #include "lib/utility.hh"
+    static Semaphore *s = new Semaphore("simpleTestSem", 3);
+  #endif
+  ```
+
+- Por otra parte, dentro modificaremos la funcion SimpleThread para que en caso de estar la constante haga un comportamiento, y si no esta haga el original:
+
+  ```
+  for (unsigned num = 0; num < 10; num++)
+  {
+  #ifdef SEMAPHORE_TEST
+    s->P();
+    printf("*** (Semaphore) Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+    s->V();
+  #endif
+
+
+  #ifndef SEMAPHORE_TEST
+  printf("\*\*\* Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+  currentThread->Yield();
+  #endif
+  }
+  ```
+
+- Por ultimo, en main cuando termine la funcion haremos delete del semaforo
+
+  ```
+  #ifdef SEMAPHORE_TEST
+    delete s;
+  #endif
+  ```
+
+16. Para este ejercicio modificaremos el codigo anterior para que dentro de SimpleThread, cuando la constante este declarada ademas llame a DEBUG con la bandera de semaforos ('s') de la siguiente manera:
+
+```
+#ifdef SEMAPHORE_TEST
+  DEBUG('s', "Thread %s P\n", currentThread->GetName());
+  s->P();
+  printf("*** (Semaphore) Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+  DEBUG('s', "Thread %s V\n", currentThread->GetName());
+  s->V();
+#endif
 ```
 
-- [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
-- [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
-- [Thread 1] int temp = count; / Si count = n, entonces ahora temp del Thread 1 es n
-- [Thread 1] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
-- [Thread 1] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
-- [Thread 1] count = temp + 1; / Se cambia count por n+1
-- [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
-- [Thread 2] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
-- [Thread 2] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
-- [Thread 2] int temp = count; / Como count ahora es n+1, entonces temp del Thread 2 es n+1
-- [Thread 2] count = temp + 1; / Ahora se guarda en count n+2
-- [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+17. La razón por la cual el resultado es erroneo es debido a un problema de concurrencia entre los dos hilos que representan a los molinetes. El error agrede se puede ver en la función Turnstile:
 
-18.
+    ```
+    Turnstile(void *n_)
+    {
+      unsigned *n = (unsigned *)n_;
+
+      for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
+      {
+        int temp = count;
+        currentThread->Yield();
+        printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
+        printf("Turnstile %u back with temp=%u.\n", *n, temp);
+        count = temp + 1;
+        currentThread->Yield();
+      }
+      printf("Turnstile %u finished. Count is now %u.\n", *n, count);
+      done[*n] = true;
+    }
+    ```
+
+    Al momento de ejecutarse el jardín ornamental tenemos que el tramo de ejecución es:
+
+    - [Thread 1] int temp = count; / Si count = n, entonces ahora temp del Thread 1 es n
+    - [Thread 1] currentThread->Yield(); / la función simula el cambio de hilo que realiza el CPU
+    - [Thread 2] int temp = count; / Como count sigue siendo n, entonces temp del Thread 2 es n
+    - [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+    - [Thread 1] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
+    - [Thread 1] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
+    - [Thread 1] count = temp + 1; / Se cambia count por n+1
+    - [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
+    - [Thread 2] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
+    - [Thread 2] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
+    - [Thread 2] count = temp + 1; / Se vuelve a guardar en count n+1
+    - [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+
+    De tal forma el valor de count terminará siendo la mitad, debido a que en cada paso ambos molinetes obtienen el mismo valor de count y por lo tanto terminan guardando el mismo valor \
+    Para arreglar el problema sin cambiar el entorno, simplemente movemos el Yield una linea arriba, de tal forma el cambio de hilo se realiza antes de la declaración de temp y por lo tanto se obtiene el valor modificado por el otro hilo
+
+    ```
+    Turnstile(void *n_)
+    {
+      unsigned *n = (unsigned *)n_;
+
+      for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
+      {
+        currentThread->Yield();
+        int temp = count;
+        printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
+        printf("Turnstile %u back with temp=%u.\n", *n, temp);
+        count = temp + 1;
+        currentThread->Yield();
+      }
+      printf("Turnstile %u finished. Count is now %u.\n", *n, count);
+      done[*n] = true;
+    }
+    ```
+
+    Ahora el tramo de ejecución es:
+
+    - [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
+    - [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+    - [Thread 1] int temp = count; / Si count = n, entonces ahora temp del Thread 1 es n
+    - [Thread 1] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
+    - [Thread 1] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
+    - [Thread 1] count = temp + 1; / Se cambia count por n+1
+    - [Thread 1] currentThread->Yield(); / se vuelve a cambiar de hilo
+    - [Thread 2] printf("Turnstile %u yielding with temp=%u.\n", \*n, temp);
+    - [Thread 2] printf("Turnstile %u back with temp=%u.\n", \*n, temp);
+    - [Thread 2] int temp = count; / Como count ahora es n+1, entonces temp del Thread 2 es n+1
+    - [Thread 2] count = temp + 1; / Ahora se guarda en count n+2
+    - [Thread 2] currentThread->Yield(); / se vuelve a cambiar de hilo
+
+18. Para poder arreglar el problema del jardin ornamental con semaforos, debemos poder atomizar la sección crítica, el cual es el cuando se modifica el contador count compartido entre los dos hilos.
+
+    Primero debemos crear un semáforo en el archivo, el mismo lo creamos como global para mayor facilidad.
+
+    ```
+    static Semaphore *s = new Semaphore("testGardenSemaphore", 1);
+    ```
+
+    Para que solo un hilo acceda a la sección crítica a la vez, el cual comienza una vez obtengamos el valor count, llamaremos al método P() del semáforo el cual intenta decrementarlo, en caso que sea 0, espera que vuelva a incrementarse. De tal forma, evitamos que otros hilos accedan a la misma sección crítica.\
+    Una vez hayamos salido de la sección crítica, osea una vez hayamos guardado el nuevo valor de count, podemos incrementar el semáforo, permitiendo al otro proceso acceder a la sección crítica.
+
+    ```
+    static void
+    Turnstile(void *n_)
+    {
+      unsigned *n = (unsigned *)n_;
+
+      for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++)
+      {
+        s->P();
+        int temp = count;
+        currentThread->Yield();
+        printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
+        printf("Turnstile %u back with temp=%u.\n", *n, temp);
+        count = temp + 1;
+        s->V();
+        currentThread->Yield();
+      }
+      printf("Turnstile %u finished. Count is now %u.\n", *n, count);
+      done[*n] = true;
+    }
+    ```
+
+    Finalmente debemos borrar el semáforo
+
+    ```
+    delete s;
+    ```
