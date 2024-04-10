@@ -9,48 +9,72 @@
 
 #include <stdio.h>
 #include "condition.hh"
+#include "lib/list.hh"
 
 static const unsigned BUFFER_SIZE = 3;
 
-int consumed = 0, pos = 0;
+int tail = -1, head = -1, consumed = 0;
 int buffer[BUFFER_SIZE];
 
 static Lock *l = new Lock("Lock");
-static Condition *c = new Condition("condition", l);
+static Condition *cP = new Condition("condition", l);
+static Condition *cC = new Condition("condition", l);
 
 void Producer(void *n_)
 {
-  for (int i = 1; i < 1000; i++)
+  for (int i = 1; i <= 1000; i++)
   {
     l->Acquire();
-    while (consumed == BUFFER_SIZE)
+    while ((tail + 1) % BUFFER_SIZE == head)
     {
       printf("Productor esperando (buffer lleno)\n");
-      c->Wait();
+      cP->Wait();
     }
-    pos = i % BUFFER_SIZE;
-    printf("Productor produce: %d en %d\n", i, pos);
-    buffer[pos] = i;
-    consumed++;
-    c->Signal();
+    if (head == -1)
+    {
+      head = 0;
+      tail = 0;
+      buffer[tail] = i;
+      cC->Signal();
+    }
+    else
+    {
+      tail = (tail + 1) % BUFFER_SIZE;
+      buffer[tail] = i;
+    }
+
     l->Release();
   }
 }
 
 void Consumer(void *n_)
 {
-  l->Acquire();
-  while (consumed == 0)
+  while (consumed < 1000)
   {
-    printf("Consumidor esperando (buffer vacio)\n");
-    c->Wait();
+
+    l->Acquire();
+    while (head == -1)
+    {
+      printf("Consumidor esperando (buffer vacio)\n");
+      cC->Wait();
+    }
+
+    printf("Consumidor consume: %d en %d\n", buffer[head], head);
+    int x = (tail + 1) % BUFFER_SIZE == head;
+    if (head == tail)
+    {
+      head = -1;
+      tail = -1;
+    }
+    else
+      head = (head + 1) % BUFFER_SIZE;
+
+    consumed++;
+    if (x)
+      cP->Signal();
+
+    l->Release();
   }
-  consumed--;
-  printf("Consumidor consume: %d en %d\n", buffer[pos], pos);
-
-  c->Signal();
-
-  l->Release();
 }
 
 void ThreadTestProdCons()

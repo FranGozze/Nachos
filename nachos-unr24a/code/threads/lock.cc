@@ -15,6 +15,7 @@
 /// limitation of liability and disclaimer of warranty provisions.
 
 #include "lock.hh"
+#include <stdio.h>
 
 extern Thread *currentThread;
 /// Dummy functions -- so we can compile our later assignments.
@@ -53,6 +54,7 @@ void Lock::Release()
 
 bool Lock::IsHeldByCurrentThread() const
 {
+  // printf("%p %p  \n", lockOwner, currentThread);
   ASSERT(lockOwner == currentThread);
   return lockOwner == currentThread;
   // // TODO

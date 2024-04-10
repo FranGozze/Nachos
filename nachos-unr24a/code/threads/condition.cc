@@ -23,7 +23,7 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
 {
   name = debugName;
   lock = conditionLock;
-  sem = new Semaphore(debugName, 1);
+  sem = new Semaphore(debugName, 0);
   semWaiting = new Semaphore("", 1);
   waiting = 0;
 }
@@ -32,6 +32,7 @@ Condition::~Condition()
 {
   delete lock;
   delete sem;
+  delete semWaiting;
 }
 
 const char *
@@ -49,6 +50,7 @@ void Condition::Wait()
   lock->Release();
   sem->P();
   lock->Acquire();
+
   semWaiting->P();
   waiting--;
   semWaiting->V();
