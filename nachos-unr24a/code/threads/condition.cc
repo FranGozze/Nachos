@@ -30,7 +30,6 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
 
 Condition::~Condition()
 {
-  delete lock;
   delete sem;
   delete semWaiting;
 }
@@ -50,15 +49,17 @@ void Condition::Wait()
   lock->Release();
   sem->P();
   lock->Acquire();
-
-  semWaiting->P();
-  waiting--;
-  semWaiting->V();
 }
 
 void Condition::Signal()
 {
-  sem->V();
+  semWaiting->P();
+  if (waiting > 0)
+  {
+    waiting--;
+    sem->V();
+  }
+  semWaiting->V();
 }
 
 void Condition::Broadcast()
@@ -66,6 +67,7 @@ void Condition::Broadcast()
   semWaiting->P();
   for (int i = 0; i < waiting; i++)
   {
+    waiting--;
     sem->V();
   }
   semWaiting->V();
