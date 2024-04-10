@@ -58,14 +58,21 @@ void Condition::Wait()
 
 void Condition::Signal()
 {
-  sem->V();
+  semWaiting->P();
+  if (waiting > 0)
+  {
+    waiting--;
+    sem->V();
+  }
+  semWaiting->V();
 }
 
 void Condition::Broadcast()
 {
   semWaiting->P();
-  for (int i = 0; i < waiting; i++)
+  while (waiting > 0)
   {
+    waiting--;
     sem->V();
   }
   semWaiting->V();
