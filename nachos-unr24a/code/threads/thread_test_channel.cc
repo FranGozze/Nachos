@@ -21,7 +21,6 @@ void transmiter(void *args)
   {
     printf("Se envia el mensaje %d. Quedan: %d \n", i, messageAmount);
     c->Send(i);
-    messageAmount--;
   }
 }
 
@@ -33,6 +32,7 @@ void receiver(void *args)
     int message;
     c->Receive(&message);
     printf("Se recibio el mensaje %d. \n", message);
+    messageAmount--;
   }
 }
 
