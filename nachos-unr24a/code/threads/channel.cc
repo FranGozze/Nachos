@@ -2,8 +2,9 @@
 #include "channel.hh"
 #include <stdio.h>
 
-Channel::Channel(/* args */)
+Channel::Channel(const char *n)
 {
+  name = n;
   sendS = new Semaphore("SendS", 1);
   recvS = new Semaphore("RecvS", 0);
 }
@@ -12,6 +13,11 @@ Channel::~Channel()
   delete sendS;
   delete recvS;
 }
+
+const char *Channel::getName()
+{
+  return name;
+};
 
 void Channel::Send(int message)
 {

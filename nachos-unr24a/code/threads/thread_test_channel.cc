@@ -11,7 +11,7 @@
 #include "channel.hh"
 #include "thread.hh"
 
-static Channel *c = new Channel();
+static Channel *c = new Channel("channelTest");
 
 static int messageAmount = 5;
 
