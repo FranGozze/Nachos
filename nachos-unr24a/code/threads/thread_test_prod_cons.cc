@@ -35,14 +35,13 @@ void Producer(void *n_)
       head = 0;
       tail = 0;
       buffer[tail] = i;
-      cC->Signal();
     }
     else
     {
       tail = (tail + 1) % BUFFER_SIZE;
       buffer[tail] = i;
     }
-
+    cC->Signal();
     l->Release();
   }
 }
@@ -70,8 +69,8 @@ void Consumer(void *n_)
       head = (head + 1) % BUFFER_SIZE;
 
     consumed++;
-    if (x)
-      cP->Signal();
+
+    cP->Signal();
 
     l->Release();
   }
