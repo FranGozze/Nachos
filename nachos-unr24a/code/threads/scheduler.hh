@@ -10,41 +10,36 @@
 #ifndef NACHOS_THREADS_SCHEDULER__HH
 #define NACHOS_THREADS_SCHEDULER__HH
 
-
 #include "thread.hh"
 #include "lib/list.hh"
-
 
 /// The following class defines the scheduler/dispatcher abstraction --
 /// the data structures and operations needed to keep track of which
 /// thread is running, and which threads are ready but not running.
-class Scheduler {
+class Scheduler
+{
 public:
+  /// Initialize list of ready threads.
+  Scheduler();
 
-    /// Initialize list of ready threads.
-    Scheduler();
+  /// De-allocate ready list.
+  ~Scheduler();
 
-    /// De-allocate ready list.
-    ~Scheduler();
+  /// Thread can be dispatched.
+  void ReadyToRun(Thread *thread);
 
-    /// Thread can be dispatched.
-    void ReadyToRun(Thread *thread);
+  /// Dequeue first thread on the ready list, if any, and return thread.
+  Thread *FindNextToRun();
 
-    /// Dequeue first thread on the ready list, if any, and return thread.
-    Thread *FindNextToRun();
+  /// Cause `nextThread` to start running.
+  void Run(Thread *nextThread);
 
-    /// Cause `nextThread` to start running.
-    void Run(Thread *nextThread);
-
-    // Print contents of ready list.
-    void Print();
+  // Print contents of ready list.
+  void Print();
 
 private:
-
-    // Queue of threads that are ready to run, but not running.
-    List<Thread*> *readyList;
-
+  // Queue of threads that are ready to run, but not running.
+  List<Thread *> *readyList[10];
 };
-
 
 #endif

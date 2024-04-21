@@ -93,10 +93,11 @@ private:
   uintptr_t machineState[MACHINE_STATE_SIZE];
 
   bool isJoinUsed, finalized;
+  int priority;
 
 public:
   /// Initialize a `Thread`.
-  Thread(const char *debugName, bool join = false);
+  Thread(const char *debugName, bool join = false, int p = 4);
 
   /// Deallocate a Thread.
   ///
@@ -125,6 +126,7 @@ public:
   void SetStatus(ThreadStatus st);
 
   const char *GetName() const;
+  int GetPriority();
 
   void Print() const;
 
