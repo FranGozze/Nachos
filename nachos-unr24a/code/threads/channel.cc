@@ -5,8 +5,9 @@
 Channel::Channel(const char *n)
 {
   name = n;
-  sendS = new Semaphore("SendS", 1);
+  sendS = new Semaphore("SendS", 0);
   recvS = new Semaphore("RecvS", 0);
+  coppied = new Semaphore("Coppied", 0);
 }
 Channel::~Channel()
 {
@@ -24,10 +25,12 @@ void Channel::Send(int message)
   sendS->P();
   buffer = message;
   recvS->V();
+  coppied->P();
 }
 void Channel::Receive(int *message)
 {
+  sendS->V();
   recvS->P();
   *message = buffer;
-  sendS->V();
+  coppied->V();
 }

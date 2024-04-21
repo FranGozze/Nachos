@@ -12,7 +12,7 @@ private:
   /// For debugging.
   const char *name;
 
-  Semaphore *sendS, *recvS;
+  Semaphore *sendS, *recvS, *coppied;
   int buffer;
 
 public:
