@@ -39,11 +39,11 @@ void SimpleThread(void *name_)
 #endif
     printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
     currentThread->Yield();
-  }
 #ifdef SEMAPHORE_TEST
-  DEBUG('s', "Thread %s V\n", currentThread->GetName());
-  s->V();
+    DEBUG('s', "Thread %s V\n", currentThread->GetName());
+    s->V();
 #endif
+  }
 
   if (strcmp(currentThread->GetName(), "main") != 0)
   {
