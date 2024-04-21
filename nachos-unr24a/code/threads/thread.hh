@@ -38,7 +38,6 @@
 #ifndef NACHOS_THREADS_THREAD__HH
 #define NACHOS_THREADS_THREAD__HH
 
-
 #include "lib/utility.hh"
 
 #ifdef USER_PROGRAM
@@ -47,7 +46,6 @@
 #endif
 
 #include <stdint.h>
-
 
 /// CPU register state to be saved on context switch.
 ///
@@ -62,14 +60,14 @@ const unsigned MACHINE_STATE_SIZE = 17;
 /// WATCH OUT IF THIS IS NOT BIG ENOUGH!!!!!
 const unsigned STACK_SIZE = 4 * 1024;
 
-
 /// Thread state.
-enum ThreadStatus {
-    JUST_CREATED,
-    RUNNING,
-    READY,
-    BLOCKED,
-    NUM_THREAD_STATUS
+enum ThreadStatus
+{
+  JUST_CREATED,
+  RUNNING,
+  READY,
+  BLOCKED,
+  NUM_THREAD_STATUS
 };
 
 /// The following class defines a “thread control block” -- which represents
@@ -82,102 +80,103 @@ enum ThreadStatus {
 ///
 ///  Some threads also belong to a user address space; threads that only run
 ///  in the kernel have a null address space.
-class Thread {
+class Thread
+{
 private:
+  // NOTE: DO NOT CHANGE the order of these first two members.
+  // THEY MUST be in this position for `SWITCH` to work.
 
-    // NOTE: DO NOT CHANGE the order of these first two members.
-    // THEY MUST be in this position for `SWITCH` to work.
+  /// The current stack pointer.
+  uintptr_t *stackTop;
 
-    /// The current stack pointer.
-    uintptr_t *stackTop;
+  /// All registers except for `stackTop`.
+  uintptr_t machineState[MACHINE_STATE_SIZE];
 
-    /// All registers except for `stackTop`.
-    uintptr_t machineState[MACHINE_STATE_SIZE];
+  bool isJoinUsed, finalized;
 
 public:
+  /// Initialize a `Thread`.
+  Thread(const char *debugName, bool join = false);
 
-    /// Initialize a `Thread`.
-    Thread(const char *debugName);
+  /// Deallocate a Thread.
+  ///
+  /// NOTE: thread being deleted must not be running when `delete` is
+  /// called.
+  ~Thread();
 
-    /// Deallocate a Thread.
-    ///
-    /// NOTE: thread being deleted must not be running when `delete` is
-    /// called.
-    ~Thread();
+  /// Basic thread operations.
 
-    /// Basic thread operations.
+  /// Make thread run `(*func)(arg)`.
+  void Fork(VoidFunctionPtr func, void *arg);
+  void Join();
 
-    /// Make thread run `(*func)(arg)`.
-    void Fork(VoidFunctionPtr func, void *arg);
+  /// Relinquish the CPU if any other thread is runnable.
+  void Yield();
 
-    /// Relinquish the CPU if any other thread is runnable.
-    void Yield();
+  /// Put the thread to sleep and relinquish the processor.
+  void Sleep();
 
-    /// Put the thread to sleep and relinquish the processor.
-    void Sleep();
+  /// The thread is done executing.
+  void Finish();
 
-    /// The thread is done executing.
-    void Finish();
+  /// Check if thread has overflowed its stack.
+  void CheckOverflow() const;
 
-    /// Check if thread has overflowed its stack.
-    void CheckOverflow() const;
+  void SetStatus(ThreadStatus st);
 
-    void SetStatus(ThreadStatus st);
+  const char *GetName() const;
 
-    const char *GetName() const;
-
-    void Print() const;
+  void Print() const;
 
 private:
-    // Some of the private data for this class is listed above.
+  // Some of the private data for this class is listed above.
 
-    /// Bottom of the stack.
-    ///
-    /// Null if this is the main thread.  (If null, do not deallocate stack.)
-    uintptr_t *stack;
+  /// Bottom of the stack.
+  ///
+  /// Null if this is the main thread.  (If null, do not deallocate stack.)
+  uintptr_t *stack;
 
-    /// Ready, running or blocked.
-    ThreadStatus status;
+  /// Ready, running or blocked.
+  ThreadStatus status;
 
-    const char *name;
+  const char *name;
 
-    /// Allocate a stack for thread.  Used internally by `Fork`.
-    void StackAllocate(VoidFunctionPtr func, void *arg);
+  /// Allocate a stack for thread.  Used internally by `Fork`.
+  void StackAllocate(VoidFunctionPtr func, void *arg);
 
 #ifdef USER_PROGRAM
-    /// User-level CPU register state.
-    ///
-    /// A thread running a user program actually has *two* sets of CPU
-    /// registers -- one for its state while executing user code, one for its
-    /// state while executing kernel code.
-    int userRegisters[NUM_TOTAL_REGS];
+  /// User-level CPU register state.
+  ///
+  /// A thread running a user program actually has *two* sets of CPU
+  /// registers -- one for its state while executing user code, one for its
+  /// state while executing kernel code.
+  int userRegisters[NUM_TOTAL_REGS];
 
 public:
+  // Save user-level register state.
+  void SaveUserState();
 
-    // Save user-level register state.
-    void SaveUserState();
+  // Restore user-level register state.
+  void RestoreUserState();
 
-    // Restore user-level register state.
-    void RestoreUserState();
-
-    // User code this thread is running.
-    AddressSpace *space;
+  // User code this thread is running.
+  AddressSpace *space;
 #endif
 };
 
 /// Magical machine-dependent routines, defined in `switch.s`.
 
-extern "C" {
-    /// First frame on thread execution stack.
-    ///
-    /// 1. Enable interrupts.
-    /// 2. Call `func`.
-    /// 3. (When func returns, if ever) call `ThreadFinish`.
-    void ThreadRoot();
+extern "C"
+{
+  /// First frame on thread execution stack.
+  ///
+  /// 1. Enable interrupts.
+  /// 2. Call `func`.
+  /// 3. (When func returns, if ever) call `ThreadFinish`.
+  void ThreadRoot();
 
-    // Stop running `oldThread` and start running `newThread`.
-    void SWITCH(Thread *oldThread, Thread *newThread);
+  // Stop running `oldThread` and start running `newThread`.
+  void SWITCH(Thread *oldThread, Thread *newThread);
 }
-
 
 #endif

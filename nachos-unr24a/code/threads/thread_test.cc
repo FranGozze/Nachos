@@ -14,6 +14,7 @@
 #include "thread_test_garden_semaphore.hh"
 #include "thread_test_prod_cons.hh"
 #include "thread_test_simple.hh"
+#include "thread_test_join.hh"
 #include "thread_test_channel.hh"
 #include "lib/utility.hh"
 
@@ -33,7 +34,9 @@ static const Test TESTS[] = {
     {&ThreadTestGarden, "garden", "Ornamental garden"},
     {&ThreadTestProdCons, "prodcons", "Producer/Consumer"},
     {&ThreadTestGardenSemaphore, "gardenSem", "Ornamental garden with Semaphores"},
-    {&ThreadTestChannel, "channel", "Channel"}};
+    {&ThreadTestChannel, "channel", "Channel"},
+    {&ThreadTestJoin, "Join", "Test to proof join"},
+};
 static const unsigned NUM_TESTS = sizeof TESTS / sizeof TESTS[0];
 
 static const unsigned NAME_MAX_LEN = 32;
