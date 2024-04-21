@@ -51,9 +51,9 @@ void Condition::Wait()
   sem->P();
   lock->Acquire();
 
-  semWaiting->P();
-  waiting--;
-  semWaiting->V();
+  // semWaiting->P();
+  // waiting--;
+  // semWaiting->V();
 }
 
 void Condition::Signal()
