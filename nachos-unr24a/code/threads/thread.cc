@@ -23,6 +23,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "semaphore.hh"
+#include "channel.hh"
 /// This is put at the top of the execution stack, for detecting stack
 /// overflows.
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
@@ -45,7 +47,9 @@ Thread::Thread(const char *threadName, bool join, int p)
   status = JUST_CREATED;
 
   isJoinUsed = join;
-  finalized = false;
+  finalizedThread = new Semaphore("threadFinalizedThread", 0);
+  inJoin = new Semaphore("ThreadInJoin", 0);
+  outJoin = new Semaphore("threadOutJoin", 0);
   priority = p;
 
 #ifdef USER_PROGRAM
@@ -66,14 +70,22 @@ Thread::~Thread()
   DEBUG('t', "Deleting thread \"%s\"\n", name);
 
   ASSERT(this != currentThread);
+  if (isJoinUsed)
+    outJoin->P();
 
-  // while (finalized)
-  //   currentThread->Yield();
+  DEBUG('s', "Deleting thread \"%s\"\n", name);
   if (stack != nullptr)
   {
 
     SystemDep::DeallocBoundedArray((char *)stack,
                                    STACK_SIZE * sizeof *stack);
+  }
+
+  if (isJoinUsed)
+  {
+    delete inJoin;
+    delete outJoin;
+    delete finalizedThread;
   }
 }
 
@@ -110,14 +122,14 @@ void Thread::Fork(VoidFunctionPtr func, void *arg)
 
 void Thread::Join()
 {
-  if (isJoinUsed)
-    while (!finalized)
-    {
-      DEBUG('t', "Esperando a que termine el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
-      currentThread->Yield();
-    }
-  DEBUG('t', "Saliendo el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
-  finalized = false;
+  ASSERT(isJoinUsed && currentThread != this);
+  inJoin->V();
+  DEBUG('s', "Esperando a que termine el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
+  finalizedThread->P();
+
+  DEBUG('s', "Saliendo el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
+  outJoin->V();
+  currentThread->Yield();
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -180,7 +192,13 @@ void Thread::Finish()
 
   DEBUG('t', "Finishing thread \"%s\"\n", GetName());
   if (isJoinUsed)
-    finalized = true;
+  {
+    finalizedThread->V();
+    // Debemos forzar el cambio de contexto para evitar que se duerman
+    this->Yield();
+
+    inJoin->P();
+  }
   threadToBeDestroyed = currentThread;
   Sleep(); // Invokes `SWITCH`.
            // Not reached.

@@ -47,6 +47,9 @@
 
 #include <stdint.h>
 
+class Semaphore;
+class Channel;
+
 /// CPU register state to be saved on context switch.
 ///
 /// x86 processors needs 9 32-bit registers, whereas x64 has 8 extra
@@ -92,7 +95,8 @@ private:
   /// All registers except for `stackTop`.
   uintptr_t machineState[MACHINE_STATE_SIZE];
 
-  bool isJoinUsed, finalized;
+  bool isJoinUsed;
+  Semaphore *outJoin, *finalizedThread, *inJoin;
   int priority;
 
 public:
@@ -126,6 +130,7 @@ public:
   void SetStatus(ThreadStatus st);
 
   const char *GetName() const;
+
   int GetPriority();
 
   void Print() const;
