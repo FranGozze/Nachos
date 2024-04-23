@@ -42,14 +42,10 @@ void ThreadTestJoin()
   Thread *t = new Thread("TestJoin", true);
   t->Fork(RunThread, NULL);
   printf("Main thread before join.\n");
-  while (b)
-    currentThread->Yield();
+  // while (b)
+  //   currentThread->Yield();
   t->Join();
   printf("Main thread after join.\n");
-
-  // the "main" thread also executes the same function
-
-  // Wait for all threads to finish if needed
 
   printf("Test finished\n");
 }

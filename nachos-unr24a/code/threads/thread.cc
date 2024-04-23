@@ -47,8 +47,7 @@ Thread::Thread(const char *threadName, bool join, int p)
   status = JUST_CREATED;
 
   isJoinUsed = join;
-  finalizedThread = new Semaphore("threadFinalizedThread", 0);
-  inJoin = new Semaphore("ThreadInJoin", 0);
+  finalizedThread = new Channel("threadFinalizedThread");
   outJoin = new Semaphore("threadOutJoin", 0);
   priority = p;
 
@@ -72,8 +71,6 @@ Thread::~Thread()
   ASSERT(this != currentThread);
   if (isJoinUsed)
     outJoin->P();
-
-  DEBUG('s', "Deleting thread \"%s\"\n", name);
   if (stack != nullptr)
   {
 
@@ -83,7 +80,6 @@ Thread::~Thread()
 
   if (isJoinUsed)
   {
-    delete inJoin;
     delete outJoin;
     delete finalizedThread;
   }
@@ -123,12 +119,16 @@ void Thread::Fork(VoidFunctionPtr func, void *arg)
 void Thread::Join()
 {
   ASSERT(isJoinUsed && currentThread != this);
-  inJoin->V();
+
   DEBUG('s', "Esperando a que termine el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
-  finalizedThread->P();
+  int msg;
+  finalizedThread->Receive(&msg);
 
   DEBUG('s', "Saliendo el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
   outJoin->V();
+
+  // Debemos forzar el cambio de contexto para evitar que el thread que estaba
+  // esperando termine antes de eliminar el thread.
   currentThread->Yield();
 }
 
@@ -192,13 +192,8 @@ void Thread::Finish()
 
   DEBUG('t', "Finishing thread \"%s\"\n", GetName());
   if (isJoinUsed)
-  {
-    finalizedThread->V();
-    // Debemos forzar el cambio de contexto para evitar que se duerman
-    this->Yield();
+    finalizedThread->Send(0);
 
-    inJoin->P();
-  }
   threadToBeDestroyed = currentThread;
   Sleep(); // Invokes `SWITCH`.
            // Not reached.

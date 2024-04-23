@@ -96,7 +96,8 @@ private:
   uintptr_t machineState[MACHINE_STATE_SIZE];
 
   bool isJoinUsed;
-  Semaphore *outJoin, *finalizedThread, *inJoin;
+  Semaphore *outJoin;
+  Channel *finalizedThread;
   int priority;
 
 public:
