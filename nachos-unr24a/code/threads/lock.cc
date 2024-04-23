@@ -39,8 +39,11 @@ Lock::GetName() const
 
 void Lock::Acquire()
 {
-  sem->P();
-  lockOwner = currentThread;
+  if (!IsHeldByCurrentThread())
+  {
+    sem->P();
+    lockOwner = currentThread;
+  }
 }
 
 void Lock::Release()
@@ -54,9 +57,6 @@ void Lock::Release()
 
 bool Lock::IsHeldByCurrentThread() const
 {
-  // printf("%p %p  \n", lockOwner, currentThread);
-  ASSERT(lockOwner == currentThread);
+  DEBUG('l', "LockOwner: %p, currentThread: %p \n", lockOwner, currentThread);
   return lockOwner == currentThread;
-  // // TODO
-  // return false;
 }

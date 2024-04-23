@@ -24,15 +24,14 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
   name = debugName;
   lock = conditionLock;
   sem = new Semaphore(debugName, 0);
-  semWaiting = new Semaphore("", 1);
+
   waiting = 0;
 }
 
 Condition::~Condition()
 {
-  delete lock;
+
   delete sem;
-  delete semWaiting;
 }
 
 const char *
@@ -43,37 +42,30 @@ Condition::GetName() const
 
 void Condition::Wait()
 {
-  semWaiting->P();
+  ASSERT(lock->IsHeldByCurrentThread());
   waiting++;
-  semWaiting->V();
-
   lock->Release();
   sem->P();
   lock->Acquire();
-
-  // semWaiting->P();
-  // waiting--;
-  // semWaiting->V();
 }
 
 void Condition::Signal()
 {
-  semWaiting->P();
+
+  ASSERT(lock->IsHeldByCurrentThread());
   if (waiting > 0)
   {
     waiting--;
     sem->V();
   }
-  semWaiting->V();
 }
 
 void Condition::Broadcast()
 {
-  semWaiting->P();
+  ASSERT(lock->IsHeldByCurrentThread());
   while (waiting > 0)
   {
     waiting--;
     sem->V();
   }
-  semWaiting->V();
 }

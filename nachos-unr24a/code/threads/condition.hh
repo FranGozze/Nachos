@@ -73,7 +73,7 @@ public:
 private:
   const char *name;
   Lock *lock;
-  Semaphore *sem, *semWaiting;
+  Semaphore *sem;
   int waiting;
   // Other needed fields are to be added here.
 };

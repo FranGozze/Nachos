@@ -59,7 +59,6 @@ void Consumer(void *n_)
     }
 
     printf("Consumidor consume: %d en %d\n", buffer[head], head);
-    int x = (tail + 1) % BUFFER_SIZE == head;
     if (head == tail)
     {
       head = -1;

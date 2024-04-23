@@ -33,7 +33,8 @@ Scheduler::Scheduler()
 /// De-allocate the list of ready threads.
 Scheduler::~Scheduler()
 {
-  delete readyList;
+  for (int i = 0; i < 10; i++)
+    delete readyList[i];
 }
 
 /// Mark a thread as ready, but not running.
