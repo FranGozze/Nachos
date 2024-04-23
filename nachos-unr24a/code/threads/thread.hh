@@ -98,7 +98,7 @@ private:
   bool isJoinUsed;
   Semaphore *outJoin;
   Channel *finalizedThread;
-  int priority;
+  int originalPriority, currentPriority;
 
 public:
   /// Initialize a `Thread`.
@@ -131,6 +131,10 @@ public:
   void SetStatus(ThreadStatus st);
 
   const char *GetName() const;
+
+  void SetPriority(int newPriority);
+
+  void SetOriginalPriority();
 
   int GetPriority();
 

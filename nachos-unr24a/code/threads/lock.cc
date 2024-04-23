@@ -41,6 +41,10 @@ void Lock::Acquire()
 {
   if (!IsHeldByCurrentThread())
   {
+    if (lockOwner && currentThread->GetPriority() > lockOwner->GetPriority())
+    {
+      lockOwner->SetPriority(currentThread->GetPriority());
+    }
     sem->P();
     lockOwner = currentThread;
   }
@@ -50,6 +54,7 @@ void Lock::Release()
 {
   if (IsHeldByCurrentThread())
   {
+    lockOwner->SetOriginalPriority();
     lockOwner = NULL;
     sem->V();
   }

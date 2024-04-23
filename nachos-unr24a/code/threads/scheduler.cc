@@ -22,6 +22,9 @@
 
 #include <stdio.h>
 
+const int MAXPRIORITY = 9;
+const int QUEUESAMOUNT = MAXPRIORITY + 1;
+
 /// Initialize the list of ready but not running threads to empty.
 Scheduler::Scheduler()
 {
@@ -33,7 +36,7 @@ Scheduler::Scheduler()
 /// De-allocate the list of ready threads.
 Scheduler::~Scheduler()
 {
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < QUEUESAMOUNT; i++)
     delete readyList[i];
 }
 
@@ -59,10 +62,13 @@ void Scheduler::ReadyToRun(Thread *thread)
 Thread *
 Scheduler::FindNextToRun()
 {
-  for (int i = 9; i >= 0; i--)
+  for (int i = MAXPRIORITY; i >= 0; i--)
   {
     if (!readyList[i]->IsEmpty())
+    {
+      DEBUG('p', "Actual priority: %d\n", i);
       return readyList[i]->Pop();
+    }
   }
 
   return NULL;
@@ -146,6 +152,6 @@ ThreadPrint(Thread *t)
 void Scheduler::Print()
 {
   printf("Ready list contents:\n");
-  for (int i = 9; i >= 0; i--)
+  for (int i = MAXPRIORITY; i >= 0; i--)
     readyList[i]->Apply(ThreadPrint);
 }

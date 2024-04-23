@@ -49,7 +49,8 @@ Thread::Thread(const char *threadName, bool join, int p)
   isJoinUsed = join;
   finalizedThread = new Channel("threadFinalizedThread");
   outJoin = new Semaphore("threadOutJoin", 0);
-  priority = p;
+  currentPriority = p;
+  originalPriority = p;
 
 #ifdef USER_PROGRAM
   space = nullptr;
@@ -171,7 +172,7 @@ void Thread::Print() const
 
 int Thread::GetPriority()
 {
-  return priority;
+  return currentPriority;
 }
 
 /// Called by `ThreadRoot` when a thread is done executing the forked
@@ -222,10 +223,10 @@ void Thread::Yield()
 
   DEBUG('t', "Yielding thread \"%s\"\n", GetName());
 
+  scheduler->ReadyToRun(this);
   Thread *nextThread = scheduler->FindNextToRun();
   if (nextThread != nullptr)
   {
-    scheduler->ReadyToRun(this);
     scheduler->Run(nextThread);
   }
 
@@ -312,6 +313,18 @@ void Thread::StackAllocate(VoidFunctionPtr func, void *arg)
   machineState[InitialPCState] = (uintptr_t)func;
   machineState[InitialArgState] = (uintptr_t)arg;
   machineState[WhenDonePCState] = (uintptr_t)ThreadFinish;
+}
+
+void Thread::SetPriority(int newPriority)
+{
+  DEBUG('l', "Cambio de prioridad a %d", newPriority);
+  currentPriority = newPriority;
+  scheduler->ReadyToRun(this);
+}
+
+void Thread::SetOriginalPriority()
+{
+  currentPriority = originalPriority;
 }
 
 #ifdef USER_PROGRAM

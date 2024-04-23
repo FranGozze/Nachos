@@ -10,22 +10,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
 /// * `name` points to a string with a thread name, just for debugging
 ///   purposes.
 
-static const int threadsAmount = 4;
+static const int threadsAmount = 2;
 
 static bool threadDone[threadsAmount];
 
-#ifdef SEMAPHORE_TEST
-#include "semaphore.hh"
-#include "lib/utility.hh"
-static Semaphore *s = new Semaphore("simpleTestSem", 3);
-#endif
-
-void SimpleThread(void *name_)
+void SimpleSchedulerThread(void *name_)
 {
   // If the lines dealing with interrupts are commented, the code will
   // behave incorrectly, because printf execution may cause race
@@ -33,16 +28,8 @@ void SimpleThread(void *name_)
   for (unsigned num = 0; num < 10; num++)
   {
 
-#ifdef SEMAPHORE_TEST
-    DEBUG('s', "Thread %s P\n", currentThread->GetName());
-    s->P();
-#endif
-    printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+    printf("*** Thread `%s` is running: sch iteration %u\n", currentThread->GetName(), num);
     currentThread->Yield();
-#ifdef SEMAPHORE_TEST
-    DEBUG('s', "Thread %s V\n", currentThread->GetName());
-    s->V();
-#endif
   }
 
   if (strcmp(currentThread->GetName(), "main") != 0)
@@ -54,11 +41,7 @@ void SimpleThread(void *name_)
   printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
 }
 
-/// Set up a ping-pong between several threads.
-///
-/// Do it by launching one thread which calls `SimpleThread`, and finally
-/// calling `SimpleThread` on the current thread.
-void ThreadTestSimple()
+void ThreadTestSchedulerSimple()
 {
 
   char **names = new char *[threadsAmount];
@@ -67,23 +50,14 @@ void ThreadTestSimple()
     names[i] = new char[16];
     sprintf(names[i], "%u", i);
 
-    Thread *t = new Thread(names[i]);
-    t->Fork(SimpleThread, NULL);
+    Thread *t = new Thread(names[i], false, i + 5);
+    t->Fork(SimpleSchedulerThread, NULL);
   }
-
-  // the "main" thread also executes the same function
-  SimpleThread(NULL);
-
   // Wait for all threads to finish if needed
-  for (bool threadFinished = false; !threadFinished; currentThread->Yield())
+  while (!threadDone[0] && !threadDone[1])
   {
-    threadFinished = true;
-    for (int i = 0; i < threadsAmount; i++)
-      threadFinished = threadFinished && threadDone[i];
+    currentThread->Yield();
   }
 
-#ifdef SEMAPHORE_TEST
-  delete s;
-#endif
   printf("Test finished\n");
 }
