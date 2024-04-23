@@ -13,6 +13,7 @@ Channel::~Channel()
 {
   delete sendS;
   delete recvS;
+  delete coppied;
 }
 
 const char *Channel::getName()
