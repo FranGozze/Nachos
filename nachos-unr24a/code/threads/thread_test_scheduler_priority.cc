@@ -65,7 +65,7 @@ void ThreadTestSchedulerPriority()
   PrioritySchedulerThread(nullptr);
   l->Release();
   // Wait for all threads to finish if needed
-  while (!threadDone[0] && !threadDone[1])
+  while (!threadDone[0] || !threadDone[1])
   {
     currentThread->Yield();
   }
