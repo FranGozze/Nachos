@@ -317,7 +317,7 @@ void Thread::StackAllocate(VoidFunctionPtr func, void *arg)
 
 void Thread::SetPriority(int newPriority)
 {
-  DEBUG('l', "Cambio de prioridad a %d", newPriority);
+  DEBUG('p', "Cambio de prioridad de %d a %d por parte de %s \n", newPriority, currentPriority, name);
   currentPriority = newPriority;
   scheduler->ReadyToRun(this);
 }

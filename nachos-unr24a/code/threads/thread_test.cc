@@ -15,6 +15,7 @@
 #include "thread_test_prod_cons.hh"
 #include "thread_test_simple.hh"
 #include "thread_test_scheduler_simple.hh"
+#include "thread_test_scheduler_priority.hh"
 #include "thread_test_join.hh"
 #include "thread_test_channel.hh"
 #include "lib/utility.hh"
@@ -37,7 +38,10 @@ static const Test TESTS[] = {
     {&ThreadTestGardenSemaphore, "gardenSem", "Ornamental garden with Semaphores"},
     {&ThreadTestChannel, "channel", "Channel"},
     {&ThreadTestJoin, "Join", "Test to proof join"},
-    {&ThreadTestSchedulerSimple, "SchedulerS", "Scheduler w/o locks"}};
+    {&ThreadTestSchedulerSimple, "SchedulerS", "Scheduler w/o locks"},
+    {&ThreadTestSchedulerPriority, "SchedulerP", "Scheduler w/ locks"}
+
+};
 static const unsigned NUM_TESTS = sizeof TESTS / sizeof TESTS[0];
 
 static const unsigned NAME_MAX_LEN = 32;

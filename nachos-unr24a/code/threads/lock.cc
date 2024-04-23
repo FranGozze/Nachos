@@ -39,11 +39,15 @@ Lock::GetName() const
 
 void Lock::Acquire()
 {
+  DEBUG('l', "%s intenta adquirir el lock\n", currentThread->GetName());
   if (!IsHeldByCurrentThread())
   {
-    if (lockOwner && currentThread->GetPriority() > lockOwner->GetPriority())
+
+    if (lockOwner)
     {
-      lockOwner->SetPriority(currentThread->GetPriority());
+      DEBUG('p', "Actual de prioridad de lockOwner %s con prioridad %d, new %d \n", lockOwner->GetName(), lockOwner->GetPriority(), currentThread->GetPriority());
+      if (currentThread->GetPriority() > lockOwner->GetPriority())
+        lockOwner->SetPriority(currentThread->GetPriority());
     }
     sem->P();
     lockOwner = currentThread;
