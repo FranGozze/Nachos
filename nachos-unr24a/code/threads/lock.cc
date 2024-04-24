@@ -40,28 +40,25 @@ Lock::GetName() const
 void Lock::Acquire()
 {
   DEBUG('l', "%s intenta adquirir el lock\n", currentThread->GetName());
-  if (!IsHeldByCurrentThread())
-  {
+  ASSERT(!IsHeldByCurrentThread());
 
-    if (lockOwner)
-    {
-      DEBUG('p', "Actual de prioridad de lockOwner %s con prioridad %d, new %d \n", lockOwner->GetName(), lockOwner->GetPriority(), currentThread->GetPriority());
-      if (currentThread->GetPriority() > lockOwner->GetPriority())
-        lockOwner->SetPriority(currentThread->GetPriority());
-    }
-    sem->P();
-    lockOwner = currentThread;
+  if (lockOwner)
+  {
+    DEBUG('p', "Actual de prioridad de lockOwner %s con prioridad %d, new %d \n", lockOwner->GetName(), lockOwner->GetPriority(), currentThread->GetPriority());
+    if (currentThread->GetPriority() > lockOwner->GetPriority())
+      lockOwner->SetPriority(currentThread->GetPriority());
   }
+  sem->P();
+  lockOwner = currentThread;
 }
 
 void Lock::Release()
 {
-  if (IsHeldByCurrentThread())
-  {
-    lockOwner->SetOriginalPriority();
-    lockOwner = NULL;
-    sem->V();
-  }
+  ASSERT(IsHeldByCurrentThread());
+
+  lockOwner->SetOriginalPriority();
+  lockOwner = NULL;
+  sem->V();
 }
 
 bool Lock::IsHeldByCurrentThread() const

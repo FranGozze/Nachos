@@ -41,6 +41,7 @@ void Producer(void *n_)
       tail = (tail + 1) % BUFFER_SIZE;
       buffer[tail] = i;
     }
+    printf("Productor produce: %d en %d\n", buffer[tail], tail);
     cC->Signal();
     l->Release();
   }
