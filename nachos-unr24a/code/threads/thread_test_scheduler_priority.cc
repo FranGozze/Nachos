@@ -50,17 +50,12 @@ void PrioritySchedulerThread(void *name_)
 void ThreadTestSchedulerPriority()
 {
 
-  char **names = new char *[threadsAmount];
-
   l->Acquire();
-  for (int i = threadsAmount - 1; i >= 0; i--)
-  {
-    names[i] = new char[16];
-    sprintf(names[i], "%u", i);
-
-    Thread *t = new Thread(names[i], false, i + 5);
-    t->Fork(PrioritySchedulerThread, NULL);
-  }
+  Thread *t0 = new Thread("0", false, 7);
+  t0->Fork(PrioritySchedulerThread, NULL);
+  currentThread->Yield();
+  Thread *t1 = new Thread("1", false, 9);
+  t1->Fork(PrioritySchedulerThread, NULL);
 
   l->Release();
   // Wait for all threads to finish if needed

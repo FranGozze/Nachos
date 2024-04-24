@@ -155,3 +155,12 @@ void Scheduler::Print()
   for (int i = MAXPRIORITY; i >= 0; i--)
     readyList[i]->Apply(ThreadPrint);
 }
+
+void Scheduler::Remove(Thread *thread)
+{
+  ASSERT(thread != nullptr);
+
+  DEBUG('p', "Removing thread %s from ready list\n", thread->GetName());
+
+  readyList[thread->GetPriority()]->Remove(thread);
+}

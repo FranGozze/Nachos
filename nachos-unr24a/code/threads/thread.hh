@@ -47,7 +47,6 @@
 
 #include <stdint.h>
 
-class Semaphore;
 class Channel;
 
 /// CPU register state to be saved on context switch.
@@ -96,7 +95,6 @@ private:
   uintptr_t machineState[MACHINE_STATE_SIZE];
 
   bool isJoinUsed;
-  Semaphore *outJoin;
   Channel *finalizedThread;
   int originalPriority, currentPriority;
 

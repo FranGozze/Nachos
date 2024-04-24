@@ -23,7 +23,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "semaphore.hh"
 #include "channel.hh"
 /// This is put at the top of the execution stack, for detecting stack
 /// overflows.
@@ -48,7 +47,6 @@ Thread::Thread(const char *threadName, bool join, int p)
 
   isJoinUsed = join;
   finalizedThread = new Channel("threadFinalizedThread");
-  outJoin = new Semaphore("threadOutJoin", 0);
   currentPriority = p;
   originalPriority = p;
 
@@ -67,23 +65,20 @@ Thread::Thread(const char *threadName, bool join, int p)
 /// Nachos.
 Thread::~Thread()
 {
-  DEBUG('t', "Deleting thread \"%s\"\n", name);
+  DEBUG('s', "Deleting thread \"%s\"\n", name);
 
   ASSERT(this != currentThread);
-  if (isJoinUsed)
-    outJoin->P();
+
   if (stack != nullptr)
   {
-
     SystemDep::DeallocBoundedArray((char *)stack,
                                    STACK_SIZE * sizeof *stack);
   }
 
   if (isJoinUsed)
-  {
-    delete outJoin;
     delete finalizedThread;
-  }
+
+  DEBUG('s', "Deleted thread \"%s\"\n", name);
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
@@ -125,12 +120,11 @@ void Thread::Join()
   int msg;
   finalizedThread->Receive(&msg);
 
-  DEBUG('s', "Saliendo el hilo %s, desde hilo: %s\"\n", name, currentThread->GetName());
-  outJoin->V();
+  DEBUG('s', "Saliendo del hilo %s desde hilo: %s\"\n", name, currentThread->GetName());
 
   // Debemos forzar el cambio de contexto para evitar que el thread que estaba
   // esperando termine antes de eliminar el thread.
-  currentThread->Yield();
+  // currentThread->Yield();
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -188,14 +182,16 @@ int Thread::GetPriority()
 /// setting `threadToBeDestroyed`, and going to sleep.
 void Thread::Finish()
 {
-  interrupt->SetLevel(INT_OFF);
   ASSERT(this == currentThread);
 
-  DEBUG('t', "Finishing thread \"%s\"\n", GetName());
   if (isJoinUsed)
     finalizedThread->Send(0);
 
+  interrupt->SetLevel(INT_OFF);
+  DEBUG('t', "Finishing thread \"%s\"\n", GetName());
+
   threadToBeDestroyed = currentThread;
+
   Sleep(); // Invokes `SWITCH`.
            // Not reached.
 }
@@ -317,6 +313,7 @@ void Thread::StackAllocate(VoidFunctionPtr func, void *arg)
 
 void Thread::SetPriority(int newPriority)
 {
+  scheduler->Remove(this);
   DEBUG('p', "Cambio de prioridad de %d a %d por parte de %s \n", newPriority, currentPriority, name);
   currentPriority = newPriority;
   scheduler->ReadyToRun(this);

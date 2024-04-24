@@ -37,6 +37,9 @@ public:
   // Print contents of ready list.
   void Print();
 
+  // Remove a thread from the queue
+  void Remove(Thread *thread);
+
 private:
   // Queue of threads that are ready to run, but not running.
   List<Thread *> *readyList[10];
