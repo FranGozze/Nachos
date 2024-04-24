@@ -1,3 +1,15 @@
 **/.vscode/
 *.o
 *.coff
+nachos-unr24a/code/vmem/nachos
+nachos-unr24a/code/vmem/Makefile.depends
+nachos-unr24a/code/userprog/nachos
+nachos-unr24a/code/userprog/Makefile.depends
+nachos-unr24a/code/threads/nachos
+nachos-unr24a/code/threads/Makefile.depends
+nachos-unr24a/code/filesys/nachos
+nachos-unr24a/code/filesys/Makefile.depends
+nachos-unr24a/code/bin/readnoff
+nachos-unr24a/code/bin/disassemble
+nachos-unr24a/code/bin/coff2noff
+nachos-unr24a/code/bin/coff2flat
