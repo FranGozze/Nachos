@@ -13,7 +13,7 @@
 
 static const unsigned BUFFER_SIZE = 3;
 
-int tail = -1, head = -1, consumed = 0;
+unsigned int tail = BUFFER_SIZE + 2, head = BUFFER_SIZE + 2, consumed = 0;
 int buffer[BUFFER_SIZE];
 
 static Lock *l = new Lock("Lock");
@@ -30,7 +30,7 @@ void Producer(void *n_)
       printf("Productor esperando (buffer lleno)\n");
       cP->Wait();
     }
-    if (head == -1)
+    if (head == BUFFER_SIZE + 2)
     {
       head = 0;
       tail = 0;
@@ -53,7 +53,7 @@ void Consumer(void *n_)
   {
 
     l->Acquire();
-    while (head == -1)
+    while (head == BUFFER_SIZE + 2)
     {
       printf("Consumidor esperando (buffer vacio)\n");
       cC->Wait();
@@ -62,8 +62,8 @@ void Consumer(void *n_)
     printf("Consumidor consume: %d en %d\n", buffer[head], head);
     if (head == tail)
     {
-      head = -1;
-      tail = -1;
+      head = BUFFER_SIZE + 2;
+      tail = BUFFER_SIZE + 2;
     }
     else
       head = (head + 1) % BUFFER_SIZE;
