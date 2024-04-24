@@ -2,9 +2,9 @@
 #include "channel.hh"
 #include <stdio.h>
 
-Channel::Channel(const char *n)
+Channel::Channel(const char *debugName)
 {
-  name = n;
+  name = debugName;
   sendS = new Semaphore("SendS", 0);
   recvS = new Semaphore("RecvS", 0);
   coppied = new Semaphore("Coppied", 0);

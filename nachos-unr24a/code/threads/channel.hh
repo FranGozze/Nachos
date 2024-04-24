@@ -16,7 +16,7 @@ private:
   int buffer;
 
 public:
-  Channel(const char *n);
+  Channel(const char *debugName);
   ~Channel();
 
   const char *getName();
