@@ -19,7 +19,7 @@
 
 static Lock *l = new Lock("lockTestScheduler");
 
-static const int threadsAmount = 2;
+static const int threadsAmount = 1;
 
 static bool threadDone[threadsAmount];
 
@@ -32,7 +32,7 @@ void PrioritySchedulerThread(void *name_)
   for (unsigned num = 0; num < 10; num++)
   {
 
-    printf("*** Thread `%s` W/ priority %d is running: sch iteration %u\n", currentThread->GetName(), currentThread->GetPriority(), num);
+    printf("*** Thread `%s` (W/ priority %d) is running: sch iteration %u\n", currentThread->GetName(), currentThread->GetPriority(), num);
     // Al cambiar de contexto (en el caso de main), intentara correr los threads creados anteriormente
     // ya que tienen mayor prioridad
     currentThread->Yield();
@@ -51,15 +51,16 @@ void ThreadTestSchedulerPriority()
 {
 
   l->Acquire();
+  printf("*** Thread `%s` (W/ priority %d) is running \n", currentThread->GetName(), currentThread->GetPriority());
   Thread *t0 = new Thread("0", false, 7);
   t0->Fork(PrioritySchedulerThread, NULL);
   currentThread->Yield();
-  Thread *t1 = new Thread("1", false, 9);
-  t1->Fork(PrioritySchedulerThread, NULL);
+  printf("*** Thread `%s` (W/ priority %d) is running \n", currentThread->GetName(), currentThread->GetPriority());
 
   l->Release();
+  printf("*** Thread `%s` (W/ priority %d) is running \n", currentThread->GetName(), currentThread->GetPriority());
   // Wait for all threads to finish if needed
-  while (!threadDone[0] || !threadDone[1])
+  while (!threadDone[0])
   {
     currentThread->Yield();
   }

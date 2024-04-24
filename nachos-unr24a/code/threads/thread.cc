@@ -65,7 +65,7 @@ Thread::Thread(const char *threadName, bool join, int p)
 /// Nachos.
 Thread::~Thread()
 {
-  DEBUG('s', "Deleting thread \"%s\"\n", name);
+  DEBUG('t', "Deleting thread \"%s\"\n", name);
 
   ASSERT(this != currentThread);
 
@@ -78,7 +78,7 @@ Thread::~Thread()
   if (isJoinUsed)
     delete finalizedThread;
 
-  DEBUG('s', "Deleted thread \"%s\"\n", name);
+  DEBUG('t', "Deleted thread \"%s\"\n", name);
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
@@ -313,6 +313,7 @@ void Thread::StackAllocate(VoidFunctionPtr func, void *arg)
 
 void Thread::SetPriority(int newPriority)
 {
+  ASSERT(this != currentThread);
   scheduler->Remove(this);
   DEBUG('p', "Cambio de prioridad de %d a %d por parte de %s \n", newPriority, currentPriority, name);
   currentPriority = newPriority;
