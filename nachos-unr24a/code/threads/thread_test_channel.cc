@@ -17,7 +17,7 @@ static int messageAmount = 5;
 
 void transmiter(void *args)
 {
-  for (int i = 0; messageAmount > 0; i++)
+  for (int i = 0; messageAmount >= 0; i++)
   {
     printf("Se envia el mensaje %d. Quedan: %d \n", i, messageAmount);
     c->Send(i);
@@ -27,7 +27,7 @@ void transmiter(void *args)
 void receiver(void *args)
 {
 
-  while (messageAmount > 0)
+  while (messageAmount >= 0)
   {
     int message;
     c->Receive(&message);
@@ -43,7 +43,7 @@ void ThreadTestChannel()
   e->Fork(transmiter, 0);
   r->Fork(receiver, 0);
 
-  while (messageAmount != 0)
+  while (messageAmount >= 0)
   {
     currentThread->Yield();
     /* code */
