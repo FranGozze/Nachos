@@ -41,10 +41,15 @@ void Lock::Acquire()
 {
   DEBUG('l', "%s intenta adquirir el lock\n", currentThread->GetName());
   ASSERT(!IsHeldByCurrentThread());
+  /*
+    Notemos que el cambio de prioridad no se puede hacer en los semaforos dado que los mismos no tiene "Dueño",
+    es decir, como tal cualquiera podria utilizar el metodo V(), por lo que no es necesario tener almacenados a los dueños a los que "hayan pasado" por el metodo P(). Por lo tanto, seria imposible localizar a alguno de esto y por lo tanto no se les podria actualizar la prioridad
 
+  */
   if (lockOwner)
   {
     DEBUG('p', "Actual de prioridad de lockOwner %s con prioridad %d, new %d \n", lockOwner->GetName(), lockOwner->GetPriority(), currentThread->GetPriority());
+
     if (currentThread->GetPriority() > lockOwner->GetPriority())
       lockOwner->SetPriority(currentThread->GetPriority());
   }
