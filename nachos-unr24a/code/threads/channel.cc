@@ -8,6 +8,7 @@ Channel::Channel(const char *debugName)
   sendS = new Semaphore("SendS", 0);
   recvS = new Semaphore("RecvS", 0);
   coppied = new Semaphore("Coppied", 0);
+  l = new Lock("l");
 }
 Channel::~Channel()
 {
@@ -24,9 +25,11 @@ const char *Channel::getName()
 void Channel::Send(int message)
 {
   sendS->P();
+  l->Acquire();
   buffer = message;
   recvS->V();
   coppied->P();
+  l->Release();
 }
 void Channel::Receive(int *message)
 {
