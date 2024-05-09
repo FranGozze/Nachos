@@ -15,22 +15,20 @@ static const unsigned DISK_SIZE = MAGIC_SIZE + NUM_SECTORS * SECTOR_SIZE;
 // #include "machine/statistics.hh"
 // extern Statistics *stats; ///< Performance metrics.
 
-#ifdef USER_PROGRAM
-#include "machine/machine.hh"
-extern Machine *machine; // User program memory and registers.
-#endif
-static const int numPhysicalPages =
-#ifdef USER_PROGRAM
-    machine->GetNumPhysicalPages()
-#endif
-#ifndef USER_PROGRAM
-        DEFAULT_NUM_PHYS_PAGES
-#endif
-    ;
+#include "system.hh"
 
 void SysInfo()
 {
   (void)COPYRIGHT; // Prevent warning about unused variable.
+
+  static const int numPhysicalPages =
+#ifdef USER_PROGRAM
+      machine->GetNumPhysicalPages()
+#endif
+#ifndef USER_PROGRAM
+          DEFAULT_NUM_PHYS_PAGES
+#endif
+      ;
 
   const char *OPTIONS =
 #ifdef THREADS
