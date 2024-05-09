@@ -19,107 +19,104 @@
 #ifndef NACHOS_FILESYS_OPENFILE__HH
 #define NACHOS_FILESYS_OPENFILE__HH
 
-
 #include "lib/utility.hh"
 
-
-#ifdef FILESYS_STUB  // Temporarily implement calls to Nachos file system as
-                     // calls to UNIX!  See definitions listed under `#else`.
-class OpenFile {
+#ifdef FILESYS_STUB // Temporarily implement calls to Nachos file system as
+                    // calls to UNIX!  See definitions listed under `#else`.
+class OpenFile
+{
 public:
+  /// Open the file.
+  OpenFile(int f)
+  {
+    file = f;
+    currentOffset = 0;
+  }
 
-    /// Open the file.
-    OpenFile(int f)
-    {
-        file = f;
-        currentOffset = 0;
-    }
+  /// Close the file.
+  ~OpenFile()
+  {
+    SystemDep::Close(file);
+  }
 
-    /// Close the file.
-    ~OpenFile()
-    {
-        SystemDep::Close(file);
-    }
+  int ReadAt(char *into, unsigned numBytes, unsigned position)
+  {
+    ASSERT(into != nullptr);
+    ASSERT(numBytes > 0);
+    SystemDep::Lseek(file, position, 0);
+    return SystemDep::ReadPartial(file, into, numBytes);
+  }
+  int WriteAt(const char *from, unsigned numBytes, unsigned position)
+  {
+    ASSERT(from != nullptr);
+    ASSERT(numBytes > 0);
+    SystemDep::Lseek(file, position, 0);
+    SystemDep::WriteFile(file, from, numBytes);
+    return numBytes;
+  }
+  int Read(char *into, unsigned numBytes)
+  {
+    ASSERT(into != nullptr);
+    ASSERT(numBytes > 0);
+    int numRead = ReadAt(into, numBytes, currentOffset);
+    currentOffset += numRead;
+    return numRead;
+  }
+  int Write(const char *from, unsigned numBytes)
+  {
+    ASSERT(from != nullptr);
+    ASSERT(numBytes > 0);
+    int numWritten = WriteAt(from, numBytes, currentOffset);
+    currentOffset += numWritten;
+    return numWritten;
+  }
 
-    int ReadAt(char *into, unsigned numBytes, unsigned position)
-    {
-        ASSERT(into != nullptr);
-        ASSERT(numBytes > 0);
-        SystemDep::Lseek(file, position, 0);
-        return SystemDep::ReadPartial(file, into, numBytes);
-    }
-    int WriteAt(const char *from, unsigned numBytes, unsigned position)
-    {
-        ASSERT(from != nullptr);
-        ASSERT(numBytes > 0);
-        SystemDep::Lseek(file, position, 0);
-        SystemDep::WriteFile(file, from, numBytes);
-        return numBytes;
-    }
-    int Read(char *into, unsigned numBytes)
-    {
-        ASSERT(into != nullptr);
-        ASSERT(numBytes > 0);
-        int numRead = ReadAt(into, numBytes, currentOffset);
-        currentOffset += numRead;
-        return numRead;
-    }
-    int Write(const char *from, unsigned numBytes)
-    {
-        ASSERT(from != nullptr);
-        ASSERT(numBytes > 0);
-        int numWritten = WriteAt(from, numBytes, currentOffset);
-        currentOffset += numWritten;
-        return numWritten;
-    }
-
-    unsigned Length() const
-    {
-        SystemDep::Lseek(file, 0, 2);
-        return SystemDep::Tell(file);
-    }
+  unsigned Length() const
+  {
+    SystemDep::Lseek(file, 0, 2);
+    return SystemDep::Tell(file);
+  }
 
 private:
-    int file;
-    unsigned currentOffset;
+  int file;
+  unsigned currentOffset;
 };
 
 #else // FILESYS
 class FileHeader;
 
-class OpenFile {
+class OpenFile
+{
 public:
+  /// Open a file whose header is located at `sector` on the disk.
+  OpenFile(int sector);
 
-    /// Open a file whose header is located at `sector` on the disk.
-    OpenFile(int sector);
+  /// Close the file.
+  ~OpenFile();
 
-    /// Close the file.
-    ~OpenFile();
+  /// Set the position from which to start reading/writing -- UNIX `lseek`.
+  void Seek(unsigned position);
 
-    /// Set the position from which to start reading/writing -- UNIX `lseek`.
-    void Seek(unsigned position);
+  /// Read/write bytes from the file, starting at the implicit position.
+  /// Return the # actually read/written, and increment position in file.
 
-    /// Read/write bytes from the file, starting at the implicit position.
-    /// Return the # actually read/written, and increment position in file.
+  int Read(char *into, unsigned numBytes);
+  int Write(const char *from, unsigned numBytes);
 
-    int Read(char *into, unsigned numBytes);
-    int Write(const char *from, unsigned numBytes);
+  /// Read/write bytes from the file, bypassing the implicit position.
 
-    /// Read/write bytes from the file, bypassing the implicit position.
+  int ReadAt(char *into, unsigned numBytes, unsigned position);
+  int WriteAt(const char *from, unsigned numBytes, unsigned position);
 
-    int ReadAt(char *into, unsigned numBytes, unsigned position);
-    int WriteAt(const char *from, unsigned numBytes, unsigned position);
+  // Return the number of bytes in the file (this interface is simpler than
+  // the UNIX idiom -- `lseek` to end of file, `tell`, `lseek` back).
+  unsigned Length() const;
 
-    // Return the number of bytes in the file (this interface is simpler than
-    // the UNIX idiom -- `lseek` to end of file, `tell`, `lseek` back).
-    unsigned Length() const;
-
-  private:
-    FileHeader *hdr;  ///< Header for this file.
-    unsigned seekPosition;  ///< Current position within the file.
+private:
+  FileHeader *hdr;       ///< Header for this file.
+  unsigned seekPosition; ///< Current position within the file.
 };
 
 #endif
-
 
 #endif

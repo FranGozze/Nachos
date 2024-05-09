@@ -44,9 +44,9 @@
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
 #endif
-
+#include "lib/table.hh"
+#include "filesys/open_file.hh"
 #include <stdint.h>
-
 class Channel;
 
 /// CPU register state to be saved on context switch.
@@ -137,6 +137,8 @@ public:
   int GetPriority();
 
   void Print() const;
+
+  Table<OpenFile *> *fileDescriptors;
 
 private:
   // Some of the private data for this class is listed above.

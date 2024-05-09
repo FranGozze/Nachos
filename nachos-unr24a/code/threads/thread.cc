@@ -50,6 +50,8 @@ Thread::Thread(const char *threadName, bool join, int p)
   currentPriority = p;
   originalPriority = p;
 
+  fileDescriptors = new Table<OpenFile *>;
+
 #ifdef USER_PROGRAM
   space = nullptr;
 #endif
