@@ -9,18 +9,18 @@
 void ReadBufferFromUser(int userAddress, char *outBuffer,
                         unsigned byteCount)
 {
-  ASSERT(userAddress != 0);
-  ASSERT(outBuffer != nullptr);
-  ASSERT(byteCount != 0);
+  // ASSERT(userAddress != 0);
+  // ASSERT(outBuffer != nullptr);
+  // ASSERT(byteCount != 0);
 
-  unsigned count = 0;
-  do
-  {
-    int temp;
-    count++;
-    ASSERT(machine->ReadMem(userAddress++, 1, &temp));
-    *outBuffer = (unsigned char)temp;
-  } while (count < byteCount);
+  // unsigned count = 0;
+  // do
+  // {
+  //   int temp;
+  //   count++;
+  //   ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+  //   *outBuffer = (unsigned char)temp;
+  // } while (count < byteCount);
 
   // return *(outBuffer - 1) == '\0';
 }
@@ -47,32 +47,32 @@ bool ReadStringFromUser(int userAddress, char *outString,
 void WriteBufferToUser(const char *buffer, int userAddress,
                        unsigned byteCount)
 {
-  ASSERT(userAddress != 0);
-  ASSERT(buffer != nullptr);
-  ASSERT(byteCount != 0);
+  // ASSERT(userAddress != 0);
+  // ASSERT(buffer != nullptr);
+  // ASSERT(byteCount != 0);
 
-  unsigned count = 0;
-  do
-  {
-    int temp = buffer[count];
-    count++;
-    ASSERT(machine->WriteMem(userAddress++, 1, temp));
-  } while (count < byteCount);
+  // unsigned count = 0;
+  // do
+  // {
+  //   int temp = buffer[count];
+  //   count++;
+  //   ASSERT(machine->WriteMem(userAddress++, 1, temp));
+  // } while (count < byteCount);
 
   // return *(buffer - 1) == '\0';
 }
 
 void WriteStringToUser(const char *string, int userAddress)
 {
-  ASSERT(userAddress != 0);
-  ASSERT(string != nullptr);
-  unsigned count = 0;
-  do
-  {
-    int temp = string[count];
-    count++;
-    ASSERT(machine->WriteMem(userAddress++, 1, temp));
-  } while (string[count] != '\0');
+  // ASSERT(userAddress != 0);
+  // ASSERT(string != nullptr);
+  // unsigned count = 0;
+  // do
+  // {
+  //   int temp = string[count];
+  //   count++;
+  //   ASSERT(machine->WriteMem(userAddress++, 1, temp));
+  // } while (string[count] != '\0');
 
   // return *(outString - 1) == '\0';
 }

@@ -21,26 +21,26 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "transfer.hh"
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 
 #include <stdio.h>
-
+// #include "filesys/file_system.hh"
+// extern FileSystem *fileSystem;
 
 static void
 IncrementPC()
 {
-    unsigned pc;
+  unsigned pc;
 
-    pc = machine->ReadRegister(PC_REG);
-    machine->WriteRegister(PREV_PC_REG, pc);
-    pc = machine->ReadRegister(NEXT_PC_REG);
-    machine->WriteRegister(PC_REG, pc);
-    pc += 4;
-    machine->WriteRegister(NEXT_PC_REG, pc);
+  pc = machine->ReadRegister(PC_REG);
+  machine->WriteRegister(PREV_PC_REG, pc);
+  pc = machine->ReadRegister(NEXT_PC_REG);
+  machine->WriteRegister(PC_REG, pc);
+  pc += 4;
+  machine->WriteRegister(NEXT_PC_REG, pc);
 }
 
 /// Do some default behavior for an unexpected exception.
@@ -54,11 +54,11 @@ IncrementPC()
 static void
 DefaultHandler(ExceptionType et)
 {
-    int exceptionArg = machine->ReadRegister(2);
+  int exceptionArg = machine->ReadRegister(2);
 
-    fprintf(stderr, "Unexpected user mode exception: %s, arg %d.\n",
-            ExceptionTypeToString(et), exceptionArg);
-    ASSERT(false);
+  fprintf(stderr, "Unexpected user mode exception: %s, arg %d.\n",
+          ExceptionTypeToString(et), exceptionArg);
+  ASSERT(false);
 }
 
 /// Handle a system call exception.
@@ -80,59 +80,82 @@ DefaultHandler(ExceptionType et)
 static void
 SyscallHandler(ExceptionType _et)
 {
-    int scid = machine->ReadRegister(2);
+  int scid = machine->ReadRegister(2);
 
-    switch (scid) {
+  switch (scid)
+  {
 
-        case SC_HALT:
-            DEBUG('e', "Shutdown, initiated by user program.\n");
-            interrupt->Halt();
-            break;
+  case SC_HALT:
+    DEBUG('e', "Shutdown, initiated by user program.\n");
+    interrupt->Halt();
+    break;
 
-        case SC_CREATE: {
-            int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0) {
-                DEBUG('e', "Error: address to filename string is null.\n");
-            }
-
-            char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr,
-                                    filename, sizeof filename)) {
-                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
-                      FILE_NAME_MAX_LEN);
-            }
-
-            DEBUG('e', "`Create` requested for file `%s`.\n", filename);
-            break;
-        }
-
-        case SC_CLOSE: {
-            int fid = machine->ReadRegister(4);
-            DEBUG('e', "`Close` requested for id %u.\n", fid);
-            break;
-        }
-
-        default:
-            fprintf(stderr, "Unexpected system call: id %d.\n", scid);
-            ASSERT(false);
-
+  case SC_CREATE:
+  {
+    int filenameAddr = machine->ReadRegister(4);
+    if (filenameAddr == 0)
+    {
+      DEBUG('e', "Error: address to filename string is null.\n");
+      machine->WriteRegister(2, -1);
     }
 
-    IncrementPC();
-}
+    char filename[FILE_NAME_MAX_LEN + 1];
+    if (!ReadStringFromUser(filenameAddr,
+                            filename, sizeof filename))
+    {
+      DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+            FILE_NAME_MAX_LEN);
+      machine->WriteRegister(2, -1);
+    }
 
+    DEBUG('e', "`Create` requested for file `%s`.\n", filename);
+    // if (fileSystem->Create(filename, 0))
+    //   machine->WriteRegister(2, 0);
+    break;
+  }
+
+  case SC_CLOSE:
+  {
+    int fid = machine->ReadRegister(4);
+    DEBUG('e', "`Close` requested for id %u.\n", fid);
+    char filename[FILE_NAME_MAX_LEN + 1];
+    if (!ReadStringFromUser(fid,
+                            filename, sizeof filename))
+    {
+      DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+            FILE_NAME_MAX_LEN);
+      machine->WriteRegister(2, -1);
+    }
+
+    break;
+  }
+
+  // case SC_READ:
+  // {
+  //   // char *buffer = machine->ReadRegister(4);
+  //   // int size = machine->ReadRegister(5);
+  //   // OpenFileId id = machine->ReadRegister(6);
+
+  //   break;
+  // }
+  default:
+    fprintf(stderr, "Unexpected system call: id %d.\n", scid);
+    ASSERT(false);
+  }
+
+  IncrementPC();
+}
 
 /// By default, only system calls have their own handler.  All other
 /// exception types are assigned the default handler.
-void
-SetExceptionHandlers()
+void SetExceptionHandlers()
 {
-    machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
-    machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
-    machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
-    machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
-    machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
-    machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
-    machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(NO_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(SYSCALL_EXCEPTION, &SyscallHandler);
+  machine->SetHandler(PAGE_FAULT_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(READ_ONLY_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(BUS_ERROR_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(OVERFLOW_EXCEPTION, &DefaultHandler);
+  machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
 }

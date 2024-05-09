@@ -107,7 +107,6 @@ PrintVersion()
 int main(int argc, char **argv)
 {
   int argCount; // The number of arguments for a particular command.
-
   Initialize(argc, argv);
   DEBUG('t', "Entering main\n");
 
