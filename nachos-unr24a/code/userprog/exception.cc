@@ -181,25 +181,27 @@ SyscallHandler(ExceptionType _et)
 
   case SC_READ:
   {
-    char bufferAddr = machine->ReadRegister(4);
+    int bufferAddr = machine->ReadRegister(4);
     int size = machine->ReadRegister(5);
-    OpenFileId fid = machine->ReadRegister(6) - 2;
+    OpenFileId fid = machine->ReadRegister(6);
     DEBUG('e', "`Read` requested for fid %u.\n", fid);
     char buffer[size];
+    int lenght = 0;
     if (fid == CONSOLE_INPUT)
     {
-      for (int i = 0; i < size; i++)
-      {
-        buffer[i] = synchConsole->GetChar();
-      }
+      for (; lenght < size; lenght++)
+        buffer[lenght] = synchConsole->GetChar();
+
+      buffer[lenght--] = '\0';
     }
     else
     {
-      OpenFile *file = currentThread->fileDescriptors->Get(fid);
+      OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
       file->Read(buffer, size);
     }
-    WriteBufferToUser(buffer, bufferAddr, size);
-    machine->WriteRegister(2, size);
+
+    WriteStringToUser(buffer, bufferAddr);
+    machine->WriteRegister(2, lenght);
     break;
   }
 
@@ -208,11 +210,12 @@ SyscallHandler(ExceptionType _et)
     int bufferAddr = machine->ReadRegister(4);
     int size = machine->ReadRegister(5);
 
-    OpenFileId fid = machine->ReadRegister(6) - 2;
+    OpenFileId fid = machine->ReadRegister(6);
     DEBUG('e', "`Write` requested for fid %u.\n", fid);
 
     char buffer[size];
     ReadBufferFromUser(bufferAddr, buffer, size);
+    DEBUG('e', "string readed %s \n", buffer);
     if (fid == CONSOLE_OUTPUT)
     {
       for (int i = 0; i < size; i++)
@@ -222,7 +225,7 @@ SyscallHandler(ExceptionType _et)
     }
     else
     {
-      OpenFile *file = currentThread->fileDescriptors->Get(fid);
+      OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
       file->Write(buffer, size);
     }
     machine->WriteRegister(2, size);
