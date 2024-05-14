@@ -9,7 +9,7 @@ class SynchConsole
 {
 private:
   Console *console;
-  Lock *usingConsole;
+  Lock *readingConsole, *writtingConsole;
   Semaphore *readAvail, *writeDone;
 
 public:

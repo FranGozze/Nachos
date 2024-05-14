@@ -13,3 +13,4 @@ nachos-unr24a/code/bin/readnoff
 nachos-unr24a/code/bin/disassemble
 nachos-unr24a/code/bin/coff2noff
 nachos-unr24a/code/bin/coff2flat
+*.txt

@@ -12,12 +12,13 @@
 
 int main(void)
 {
-  // Create("test.txt");
-  // int o = Open("test.txt");
+  Create("test.txt");
+  int o = Open("test.txt");
   Write("Hello world\n", 12, CONSOLE_OUTPUT);
   char buf[12];
   Read(buf, 12, CONSOLE_INPUT);
   Write(buf, 12, CONSOLE_OUTPUT);
+  Write(buf, 12, o);
 
   return 0;
 }

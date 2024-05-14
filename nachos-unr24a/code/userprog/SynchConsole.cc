@@ -19,7 +19,8 @@ WriteDoneDummy(void *args)
 SynchConsole::SynchConsole(/* args */)
 {
   console = new Console(nullptr, nullptr, ReadAvailDummy, WriteDoneDummy, this);
-  usingConsole = new Lock("ConsoleLock");
+  readingConsole = new Lock("ReadingConsoleLock");
+  writtingConsole = new Lock("WrittingConsoleLock");
   writeDone = new Semaphore("writeDoneConsole", 0);
   readAvail = new Semaphore("readAvailConsole", 0);
 }
@@ -27,25 +28,26 @@ SynchConsole::SynchConsole(/* args */)
 SynchConsole::~SynchConsole()
 {
   delete console;
-  delete usingConsole;
+  delete readingConsole;
+  delete writtingConsole;
   delete readAvail;
   delete writeDone;
 }
 
 void SynchConsole::PutChar(char ch)
 {
-  usingConsole->Acquire();
+  writtingConsole->Acquire();
   console->PutChar(ch);
   writeDone->P();
-  usingConsole->Release();
+  writtingConsole->Release();
 }
 
 char SynchConsole::GetChar()
 {
-  usingConsole->Acquire();
+  readingConsole->Acquire();
   readAvail->P();
   char ch = console->GetChar();
-  usingConsole->Release();
+  readingConsole->Release();
   return ch;
 }
 

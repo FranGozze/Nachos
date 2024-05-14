@@ -82,6 +82,7 @@ static inline void getFileName(char *filename, int size = FILE_NAME_MAX_LEN + 1)
           FILE_NAME_MAX_LEN);
     machine->WriteRegister(2, -1);
   }
+  DEBUG('e', "Filename in getFileName %s.\n", filename);
 }
 
 /// Handle a system call exception.
@@ -116,7 +117,7 @@ SyscallHandler(ExceptionType _et)
   case SC_CREATE:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename);
+    getFileName(filename, FILE_NAME_MAX_LEN + 1);
     DEBUG('e', "`Create` requested for file `%s`.\n", filename);
     if (fileSystem->Create(filename, 0))
     {
@@ -237,8 +238,10 @@ SyscallHandler(ExceptionType _et)
     int status = machine->ReadRegister(4);
     if (status)
     {
-      printf("Wrong status exit: %d\n", status);
+      DEBUG('e', "Wrong status exit: %d\n", status);
     }
+    // currentThread->SetExitStatus(status);
+    currentThread->Finish();
     break;
   }
 
