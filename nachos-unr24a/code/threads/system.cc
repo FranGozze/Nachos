@@ -215,7 +215,7 @@ void Initialize(int argc, char **argv)
 
   machine = new Machine(d, numPhysicalPages); // This must come first.
   SetExceptionHandlers();
-  synchConsole = new SynchConsole();
+  synchConsole = new SynchConsole(nullptr, nullptr);
 #endif
 
 #ifdef FILESYS

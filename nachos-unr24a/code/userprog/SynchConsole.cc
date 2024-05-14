@@ -16,9 +16,11 @@ WriteDoneDummy(void *args)
   ((SynchConsole *)args)->WriteDone();
 }
 
-SynchConsole::SynchConsole(/* args */)
+SynchConsole::SynchConsole(const char *rFile, const char *wFile)
 {
-  console = new Console(nullptr, nullptr, ReadAvailDummy, WriteDoneDummy, this);
+  console = new Console(rFile, wFile, ReadAvailDummy, WriteDoneDummy, this);
+  readFile = rFile;
+  writeFile = wFile;
   readingConsole = new Lock("ReadingConsoleLock");
   writtingConsole = new Lock("WrittingConsoleLock");
   writeDone = new Semaphore("writeDoneConsole", 0);

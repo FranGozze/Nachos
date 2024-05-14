@@ -8,12 +8,13 @@
 class SynchConsole
 {
 private:
+  const char *readFile, *writeFile;
   Console *console;
   Lock *readingConsole, *writtingConsole;
   Semaphore *readAvail, *writeDone;
 
 public:
-  SynchConsole();
+  SynchConsole(const char *rFile, const char *wFile);
   ~SynchConsole();
 
   void PutChar(char ch);
