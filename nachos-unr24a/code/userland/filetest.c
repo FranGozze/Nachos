@@ -15,10 +15,15 @@ int main(void)
   Create("test.txt");
   int o = Open("test.txt");
   Write("Hello world\n", 12, CONSOLE_OUTPUT);
-  char buf[12];
+  char buf[12], buf2[12];
   Read(buf, 12, CONSOLE_INPUT);
   Write(buf, 12, CONSOLE_OUTPUT);
   Write(buf, 12, o);
-
+  Close(o);
+  o = Open("test.txt");
+  Read(buf2, 12, o);
+  Write(buf2, 12, CONSOLE_OUTPUT);
+  Close(o);
+  // Remove("test.txt");
   return 0;
 }

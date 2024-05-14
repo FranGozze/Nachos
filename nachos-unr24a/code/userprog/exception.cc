@@ -189,18 +189,17 @@ SyscallHandler(ExceptionType _et)
     char buffer[size];
     int lenght = 0;
     if (fid == CONSOLE_INPUT)
-    {
       for (; lenght < size; lenght++)
         buffer[lenght] = synchConsole->GetChar();
 
-      buffer[lenght--] = '\0';
-    }
     else
     {
       OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
-      file->Read(buffer, size);
+      lenght = file->Read(buffer, size);
     }
 
+    buffer[lenght--] = '\0';
+    DEBUG('e', "'Read'string readed %s \n", buffer);
     WriteStringToUser(buffer, bufferAddr);
     machine->WriteRegister(2, lenght);
     break;
@@ -216,20 +215,21 @@ SyscallHandler(ExceptionType _et)
 
     char buffer[size];
     ReadBufferFromUser(bufferAddr, buffer, size);
-    DEBUG('e', "string readed %s \n", buffer);
+    DEBUG('e', "`Write`string readed %s \n", buffer);
+    int lenght = 0;
     if (fid == CONSOLE_OUTPUT)
     {
-      for (int i = 0; i < size; i++)
+      for (; lenght < size; lenght++)
       {
-        synchConsole->PutChar(buffer[i]);
+        synchConsole->PutChar(buffer[lenght]);
       }
     }
     else
     {
       OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
-      file->Write(buffer, size);
+      lenght = file->Write(buffer, size);
     }
-    machine->WriteRegister(2, size);
+    machine->WriteRegister(2, lenght);
     break;
   }
 
@@ -237,11 +237,9 @@ SyscallHandler(ExceptionType _et)
   {
     int status = machine->ReadRegister(4);
     if (status)
-    {
       DEBUG('e', "Wrong status exit: %d\n", status);
-    }
-    // currentThread->SetExitStatus(status);
-    currentThread->Finish();
+
+    currentThread->Finish(status);
     break;
   }
 

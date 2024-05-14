@@ -182,12 +182,13 @@ int Thread::GetPriority()
 ///
 /// NOTE: we disable interrupts, so that we do not get a time slice between
 /// setting `threadToBeDestroyed`, and going to sleep.
-void Thread::Finish()
+void Thread::Finish(int statusFinished)
 {
   ASSERT(this == currentThread);
 
+  DEBUG('t', "Finished with status: %d\n", statusFinished);
   if (isJoinUsed)
-    finalizedThread->Send(0);
+    finalizedThread->Send(statusFinished);
 
   interrupt->SetLevel(INT_OFF);
   DEBUG('t', "Finishing thread \"%s\"\n", GetName());
