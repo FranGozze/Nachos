@@ -100,7 +100,7 @@ private:
 
 public:
   /// Initialize a `Thread`.
-  Thread(const char *debugName, bool join = false, int p = 4);
+  Thread(const char *debugName, bool join = false, int p = 4, OpenFile *fileAddrs = nullptr);
 
   /// Deallocate a Thread.
   ///
@@ -113,7 +113,7 @@ public:
   /// Make thread run `(*func)(arg)`.
   void Fork(VoidFunctionPtr func, void *arg);
 
-  void Join();
+  int Join();
 
   /// Relinquish the CPU if any other thread is runnable.
   void Yield();

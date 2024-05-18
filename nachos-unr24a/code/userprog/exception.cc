@@ -35,6 +35,7 @@ extern FileSystem *fileSystem;
 
 #include "SynchConsole.hh"
 extern SynchConsole *synchConsole;
+extern Table<Thread *> *spaceThreads;
 static void
 IncrementPC()
 {
@@ -101,6 +102,17 @@ static inline void getFileName(char *filename, int size = FILE_NAME_MAX_LEN + 1)
 ///
 /// And do not forget to increment the program counter before returning. (Or
 /// else you will loop making the same system call forever!)
+
+static void StartProcess(void *args)
+{
+  int fd = (int)*args;
+  currentThread->space->InitRegisters();
+  currentThread->space->RestoreState();
+  machine->WriteRegister(2, 0);
+  machine->WriteRegister(4, fd);
+  machine->Run();
+}
+
 static void
 SyscallHandler(ExceptionType _et)
 {
@@ -243,6 +255,38 @@ SyscallHandler(ExceptionType _et)
     break;
   }
 
+  case SC_EXEC:
+  {
+    char filename[FILE_NAME_MAX_LEN + 1];
+    getFileName(filename);
+    if (OpenFile *file = fileSystem->Open(filename))
+    {
+      // el +2 es porque 0 y 1 estan reservados para consola
+      int fd = currentThread->fileDescriptors->Add(file) + 2;
+      DEBUG('e', "File opened `%s`, fd: %d.\n", filename, fd);
+      Thread *t = new Thread(filename, true, currentThread->GetPriority(), file);
+      DEBUG('e', "thread created \n");
+      t->Fork(StartProcess, (void *)fd);
+      DEBUG('e', "thread scheduled \n");
+      machine->WriteRegister(2, spaceThreads->Add(t));
+      DEBUG('e', "thread register \n");
+    }
+    else
+    {
+      DEBUG('e', "Failed to open file `%s`.\n", filename);
+      machine->WriteRegister(2, -1);
+    }
+    break;
+  }
+
+  case SC_JOIN:
+  {
+    SpaceId id = machine->ReadRegister(4);
+    Thread *t = spaceThreads->Get(id);
+    machine->WriteRegister(2, t->Join());
+
+    break;
+  }
   default:
     fprintf(stderr, "Unexpected system call: id %d.\n", scid);
     ASSERT(false);

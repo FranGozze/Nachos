@@ -38,7 +38,7 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool join, int p)
+Thread::Thread(const char *threadName, bool join, int p, OpenFile *fileAddr)
 {
   name = threadName;
   stackTop = nullptr;
@@ -53,7 +53,10 @@ Thread::Thread(const char *threadName, bool join, int p)
   fileDescriptors = new Table<OpenFile *>;
 
 #ifdef USER_PROGRAM
-  space = nullptr;
+  if (fileAddr)
+  {
+    space = new AddressSpace(fileAddr);
+  }
 #endif
 }
 
@@ -114,7 +117,7 @@ void Thread::Fork(VoidFunctionPtr func, void *arg)
   interrupt->SetLevel(oldLevel);
 }
 
-void Thread::Join()
+int Thread::Join()
 {
   ASSERT(isJoinUsed && currentThread != this);
 
@@ -123,7 +126,7 @@ void Thread::Join()
   finalizedThread->Receive(&msg);
 
   DEBUG('s', "Saliendo del hilo %s desde hilo: %s\"\n", name, currentThread->GetName());
-
+  return msg;
   // Debemos forzar el cambio de contexto para evitar que el thread que estaba
   // esperando termine antes de eliminar el thread.
   // currentThread->Yield();
