@@ -63,6 +63,7 @@ Exec:
 
         .globl  Join
         .ent    Join
+
 Join:
         addiu   $2, $0, SC_JOIN
         syscall

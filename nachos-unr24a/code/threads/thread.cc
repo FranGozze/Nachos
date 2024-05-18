@@ -28,6 +28,9 @@
 /// overflows.
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
 
+#include "lib/table.hh"
+extern Table<Thread *> *spaceThreads;
+
 static inline bool
 IsThreadStatus(ThreadStatus s)
 {
@@ -38,7 +41,7 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool join, int p, OpenFile *fileAddr)
+Thread::Thread(const char *threadName, bool join, int p)
 {
   name = threadName;
   stackTop = nullptr;
@@ -50,13 +53,10 @@ Thread::Thread(const char *threadName, bool join, int p, OpenFile *fileAddr)
   currentPriority = p;
   originalPriority = p;
 
-  fileDescriptors = new Table<OpenFile *>;
-
 #ifdef USER_PROGRAM
-  if (fileAddr)
-  {
-    space = new AddressSpace(fileAddr);
-  }
+  space = nullptr;
+  fileDescriptors = new Table<OpenFile *>;
+  pid = spaceThreads->Add(this);
 #endif
 }
 
@@ -82,6 +82,16 @@ Thread::~Thread()
 
   if (isJoinUsed)
     delete finalizedThread;
+
+#ifdef USER_PROGRAM
+
+  for (unsigned i = 2; i < fileDescriptors->SIZE; i++)
+    if (fileDescriptors->HasKey(i))
+      delete fileDescriptors->Remove(i);
+
+  spaceThreads->Remove(pid);
+  delete space;
+#endif
 
   DEBUG('t', "Deleted thread \"%s\"\n", name);
 }

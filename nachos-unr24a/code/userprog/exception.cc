@@ -30,6 +30,9 @@
 // #include "machine/machine.hh"
 // extern Machine *machine;
 
+#include "address_space.hh"
+#include "args.hh"
+
 #include "filesys/file_system.hh"
 extern FileSystem *fileSystem;
 
@@ -83,7 +86,7 @@ static inline void getFileName(char *filename, int size = FILE_NAME_MAX_LEN + 1)
           FILE_NAME_MAX_LEN);
     machine->WriteRegister(2, -1);
   }
-  DEBUG('e', "Filename in getFileName %s.\n", filename);
+  DEBUG('e', "Filename in getFileName %s .\n", filename);
 }
 
 /// Handle a system call exception.
@@ -105,11 +108,16 @@ static inline void getFileName(char *filename, int size = FILE_NAME_MAX_LEN + 1)
 
 static void StartProcess(void *args)
 {
-  int fd = (int)*args;
   currentThread->space->InitRegisters();
   currentThread->space->RestoreState();
-  machine->WriteRegister(2, 0);
-  machine->WriteRegister(4, fd);
+  if (args)
+  {
+    machine->WriteRegister(4, WriteArgs((char **)args));
+    machine->WriteRegister(5, machine->ReadRegister(STACK_REG) + 16);
+  }
+
+  // machine->WriteRegister(2, 0);
+  // machine->WriteRegister(4, fd);
   machine->Run();
 }
 
@@ -259,16 +267,20 @@ SyscallHandler(ExceptionType _et)
   {
     char filename[FILE_NAME_MAX_LEN + 1];
     getFileName(filename);
+    char **args = SaveArgs(machine->ReadRegister(5));
+    // int joinable = machine->ReadRegister(6);
     if (OpenFile *file = fileSystem->Open(filename))
     {
       // el +2 es porque 0 y 1 estan reservados para consola
-      int fd = currentThread->fileDescriptors->Add(file) + 2;
-      DEBUG('e', "File opened `%s`, fd: %d.\n", filename, fd);
-      Thread *t = new Thread(filename, true, currentThread->GetPriority(), file);
+      // int fd = currentThread->fileDescriptors->Add(file) + 2;
+      // DEBUG('e', "File opened `%s`, fd: %d.\n", filename, fd);
+      Thread *t = new Thread(filename, true, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
-      t->Fork(StartProcess, (void *)fd);
-      DEBUG('e', "thread scheduled \n");
-      machine->WriteRegister(2, spaceThreads->Add(t));
+      t->space = new AddressSpace(file);
+      t->Fork(StartProcess, args);
+
+      DEBUG('e', "thread scheduled: %d \n", t->pid);
+      machine->WriteRegister(2, t->pid);
       DEBUG('e', "thread register \n");
     }
     else
@@ -293,6 +305,16 @@ SyscallHandler(ExceptionType _et)
   }
 
   IncrementPC();
+}
+
+static void
+NoDefaultHandler(ExceptionType et)
+{
+  int exceptionArg = machine->ReadRegister(2);
+
+  fprintf(stderr, "Page Fault: %s, arg %d.\n",
+          ExceptionTypeToString(et), exceptionArg);
+  ASSERT(false);
 }
 
 /// By default, only system calls have their own handler.  All other

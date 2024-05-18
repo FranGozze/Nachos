@@ -13,49 +13,45 @@
 #ifndef NACHOS_USERPROG_ADDRESSSPACE__HH
 #define NACHOS_USERPROG_ADDRESSSPACE__HH
 
-
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
 
+const unsigned USER_STACK_SIZE = 1024; ///< Increase this as necessary!
 
-const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
-
-
-class AddressSpace {
+class AddressSpace
+{
 public:
+  /// Create an address space to run a user program.
+  ///
+  /// The address space is initialized from an already opened file.
+  /// The program contained in the file is loaded into memory and
+  /// everything is set up so that user instructions can start to be
+  /// executed.
+  ///
+  /// Parameters:
+  /// * `executable_file` is the open file that corresponds to the
+  ///   program; it contains the object code to load into memory.
+  AddressSpace(OpenFile *executable_file);
 
-    /// Create an address space to run a user program.
-    ///
-    /// The address space is initialized from an already opened file.
-    /// The program contained in the file is loaded into memory and
-    /// everything is set up so that user instructions can start to be
-    /// executed.
-    ///
-    /// Parameters:
-    /// * `executable_file` is the open file that corresponds to the
-    ///   program; it contains the object code to load into memory.
-    AddressSpace(OpenFile *executable_file);
+  /// De-allocate an address space.
+  ~AddressSpace();
 
-    /// De-allocate an address space.
-    ~AddressSpace();
+  /// Initialize user-level CPU registers, before jumping to user code.
+  void InitRegisters();
 
-    /// Initialize user-level CPU registers, before jumping to user code.
-    void InitRegisters();
+  /// Save/restore address space-specific info on a context switch.
 
-    /// Save/restore address space-specific info on a context switch.
+  void SaveState();
+  void RestoreState();
 
-    void SaveState();
-    void RestoreState();
+  int Translate(int virtualAddress);
 
 private:
+  /// Assume linear page table translation for now!
+  TranslationEntry *pageTable;
 
-    /// Assume linear page table translation for now!
-    TranslationEntry *pageTable;
-
-    /// Number of pages in the virtual address space.
-    unsigned numPages;
-
+  /// Number of pages in the virtual address space.
+  unsigned numPages;
 };
-
 
 #endif

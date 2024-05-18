@@ -100,7 +100,7 @@ private:
 
 public:
   /// Initialize a `Thread`.
-  Thread(const char *debugName, bool join = false, int p = 4, OpenFile *fileAddrs = nullptr);
+  Thread(const char *debugName, bool join = false, int p = 4);
 
   /// Deallocate a Thread.
   ///
@@ -174,6 +174,8 @@ public:
 
   // User code this thread is running.
   AddressSpace *space;
+
+  int pid;
 #endif
 };
 
