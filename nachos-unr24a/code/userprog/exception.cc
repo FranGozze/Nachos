@@ -113,7 +113,7 @@ static void StartProcess(void *args)
   if (args)
   {
     machine->WriteRegister(4, WriteArgs((char **)args));
-    machine->WriteRegister(5, machine->ReadRegister(STACK_REG) + 16);
+    // machine->WriteRegister(5, machine->ReadRegister(STACK_REG) + 16);
   }
 
   // machine->WriteRegister(2, 0);
@@ -268,15 +268,18 @@ SyscallHandler(ExceptionType _et)
     char filename[FILE_NAME_MAX_LEN + 1];
     getFileName(filename);
     char **args = SaveArgs(machine->ReadRegister(5));
-    // int joinable = machine->ReadRegister(6);
+    int joinable = machine->ReadRegister(6);
     if (OpenFile *file = fileSystem->Open(filename))
     {
       // el +2 es porque 0 y 1 estan reservados para consola
       // int fd = currentThread->fileDescriptors->Add(file) + 2;
       // DEBUG('e', "File opened `%s`, fd: %d.\n", filename, fd);
-      Thread *t = new Thread(filename, true, currentThread->GetPriority());
+      Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
       t->space = new AddressSpace(file);
+      for (int i = 0; args[i] != NULL; i++)
+        DEBUG('e', "args %s \n", args[i]);
+
       t->Fork(StartProcess, args);
 
       DEBUG('e', "thread scheduled: %d \n", t->pid);

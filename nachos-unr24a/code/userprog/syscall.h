@@ -60,7 +60,7 @@ typedef int SpaceId;
 /// address space identifier.
 // SpaceId Exec(char *name);
 
-SpaceId Exec(char *name, char **args);
+SpaceId Exec(char *name, char **args, int joinable);
 
 /// Only return once the the user program `id` has finished.
 ///
