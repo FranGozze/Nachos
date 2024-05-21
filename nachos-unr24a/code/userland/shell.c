@@ -131,13 +131,12 @@ int main(void)
       for (int i = 0; i < strlen(line); i++)
         line[i] = line[i + 1];
 
-    Write("1\n", 4, OUTPUT);
-    const int newProc = Exec(line, argv, join);
+    const int newProc = Exec2(line, argv, join);
     // const SpaceId newProc = Exec(line, argv);
 
     // TODO: check for errors when calling `Exec`; this depends on how
     //       errors are reported.
-    Write("2\n", 4, OUTPUT);
+
     if (join)
       Join(newProc);
     // TODO: is it necessary to check for errors after `Join` too, or

@@ -219,8 +219,8 @@ SyscallHandler(ExceptionType _et)
       OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
       lenght = file->Read(buffer, size);
     }
+    buffer[lenght] = '\0';
 
-    buffer[lenght--] = '\0';
     DEBUG('e', "'Read'string readed %s \n", buffer);
     WriteStringToUser(buffer, bufferAddr);
     machine->WriteRegister(2, lenght);
@@ -233,7 +233,7 @@ SyscallHandler(ExceptionType _et)
     int size = machine->ReadRegister(5);
 
     OpenFileId fid = machine->ReadRegister(6);
-    DEBUG('e', "`Write` requested for fid %u, pid: %d.\n", fid, currentThread->pid);
+    DEBUG('e', "`Write` requested for fid %u, pid: %d, addr %d.\n", fid, currentThread->pid, bufferAddr);
 
     char buffer[size];
     ReadBufferFromUser(bufferAddr, buffer, size);
@@ -269,13 +269,33 @@ SyscallHandler(ExceptionType _et)
   {
     char filename[FILE_NAME_MAX_LEN + 1];
     getFileName(filename);
+    int joinable = machine->ReadRegister(5);
+    if (OpenFile *file = fileSystem->Open(filename))
+    {
+      Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
+      DEBUG('e', "thread created \n");
+      t->space = new AddressSpace(file);
+      t->Fork(StartProcess, nullptr);
+      DEBUG('e', "thread scheduled: %d \n", t->pid);
+      machine->WriteRegister(2, t->pid);
+      DEBUG('e', "thread register \n");
+    }
+    else
+    {
+      DEBUG('e', "Failed to open file `%s`.\n", filename);
+      machine->WriteRegister(2, -1);
+    }
+    break;
+  }
+
+  case SC_EXEC2:
+  {
+    char filename[FILE_NAME_MAX_LEN + 1];
+    getFileName(filename);
     char **args = SaveArgs(machine->ReadRegister(5));
     int joinable = machine->ReadRegister(6);
     if (OpenFile *file = fileSystem->Open(filename))
     {
-      // el +2 es porque 0 y 1 estan reservados para consola
-      // int fd = currentThread->fileDescriptors->Add(file) + 2;
-      // DEBUG('e', "File opened `%s`, fd: %d.\n", filename, fd);
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
       t->space = new AddressSpace(file);

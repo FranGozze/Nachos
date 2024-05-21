@@ -1,6 +1,7 @@
 /// Shows the contens of a files specified on the command line.
 
 #include "syscall.h"
+#include "lib.h"
 
 #define ARGC_ERROR "Error: missing argument."
 #define OPEN_ERROR "Error: could not open file."
@@ -18,10 +19,11 @@ int main(int argc, char *argv[])
   int success = 1;
 
   char buffer[MAX_LENGTH];
-  int fid;
-  if (fid = Open(argv[1]) != -1)
+  int fid = Open(argv[1]);
+  if (fid != -1)
   {
     int length = Read(buffer, MAX_LENGTH, fid);
+
     for (int i = 0; i < length; i++)
       Write(&buffer[i], 1, CONSOLE_OUTPUT);
   }

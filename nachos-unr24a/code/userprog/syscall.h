@@ -25,7 +25,7 @@
 #define SC_FORK 4
 #define SC_YIELD 5
 
-// #define SC_EXEC2 7
+#define SC_EXEC2 7
 
 #define SC_CREATE 10
 #define SC_REMOVE 11
@@ -59,8 +59,9 @@ typedef int SpaceId;
 /// Run the executable, stored in the Nachos file `name`, and return the
 /// address space identifier.
 // SpaceId Exec(char *name);
+SpaceId Exec(char *name, int joinable);
 
-SpaceId Exec(char *name, char **args, int joinable);
+SpaceId Exec2(char *name, char **args, int joinable);
 
 /// Only return once the the user program `id` has finished.
 ///

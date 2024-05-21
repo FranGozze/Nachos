@@ -12,6 +12,7 @@
 
 int main(void)
 {
+
   Create("test.txt");
   int o = Open("test.txt");
   Write("Hello world\n", 12, CONSOLE_OUTPUT);

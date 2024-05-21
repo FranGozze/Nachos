@@ -16,6 +16,7 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
   for (unsigned count = 0; count < byteCount; count++, outBuffer++)
   {
     ASSERT(machine->ReadMem(userAddress++, 1, (int *)outBuffer));
+    DEBUG('e', "ReadBufferFromUser: %d\n", userAddress);
   }
   *outBuffer = '\0';
 }

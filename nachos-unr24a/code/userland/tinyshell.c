@@ -22,8 +22,16 @@ int main(void)
 
     if (i > 0)
     {
-      newProc = Exec(buffer, (char **)"", 1);
-      Join(newProc);
+      int join = 1;
+      if (buffer[0] == '&')
+      {
+        join = 0;
+        for (int j = 0; j < i; j++)
+          buffer[j] = buffer[j + 1];
+      }
+      newProc = Exec(buffer, join);
+      if (join)
+        Join(newProc);
     }
   }
 

@@ -1,21 +1,22 @@
 /// Outputs arguments entered on the command line.
 
 #include "syscall.h"
-
+#include "lib.h"
 #define ARGC_ERROR "Error: missing argument."
 #define OPEN_ERROR "Error: could not open file."
 
-#define MAX_LENGTH_FILE 256;
+#define MAX_LENGTH_FILE 256
 
 int main(int argc, char *argv[])
 {
-  if (argc != 2)
+  if (argc != 3)
   {
     Write(ARGC_ERROR, sizeof(ARGC_ERROR) - 1, CONSOLE_OUTPUT);
     Exit(1);
   }
   int success = 1;
   int fid = Open(argv[1]);
+
   if (fid != -1)
   {
     char buffer[MAX_LENGTH_FILE];
@@ -23,11 +24,16 @@ int main(int argc, char *argv[])
 
     int fid2 = Open(argv[2]);
     if (fid2 != -1)
+    {
+      Write("hola\n", 5, CONSOLE_OUTPUT);
       Write(buffer, length, fid2);
+    }
     else
     {
       Create(argv[2]);
+
       fid2 = Open(argv[2]);
+
       Write(buffer, length, fid2);
     }
   }
