@@ -113,7 +113,9 @@ static void StartProcess(void *args)
   if (args)
   {
     machine->WriteRegister(4, WriteArgs((char **)args));
-    // machine->WriteRegister(5, machine->ReadRegister(STACK_REG) + 16);
+    int sp = machine->ReadRegister(STACK_REG);
+    machine->WriteRegister(5, sp);
+    machine->WriteRegister(STACK_REG, sp - 24);
   }
 
   // machine->WriteRegister(2, 0);
@@ -205,7 +207,7 @@ SyscallHandler(ExceptionType _et)
     int bufferAddr = machine->ReadRegister(4);
     int size = machine->ReadRegister(5);
     OpenFileId fid = machine->ReadRegister(6);
-    DEBUG('e', "`Read` requested for fid %u.\n", fid);
+    DEBUG('e', "`Read` requested for fid %u, pid: %d.\n", fid, currentThread->pid);
     char buffer[size];
     int lenght = 0;
     if (fid == CONSOLE_INPUT)
@@ -231,7 +233,7 @@ SyscallHandler(ExceptionType _et)
     int size = machine->ReadRegister(5);
 
     OpenFileId fid = machine->ReadRegister(6);
-    DEBUG('e', "`Write` requested for fid %u.\n", fid);
+    DEBUG('e', "`Write` requested for fid %u, pid: %d.\n", fid, currentThread->pid);
 
     char buffer[size];
     ReadBufferFromUser(bufferAddr, buffer, size);
