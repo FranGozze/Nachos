@@ -144,6 +144,13 @@ void AddressSpace::InitRegisters()
 /// For now, nothing!
 void AddressSpace::SaveState()
 {
+#ifdef USE_TLB
+  for (unsigned i = 0; i < TLB_SIZE; i++)
+  {
+    machine->GetMMU()->tlb[i].valid = false;
+  }
+  machine->GetMMU()->lastTlbEntry = 0;
+#endif
 }
 
 /// On a context switch, restore the machine state so that this address space
