@@ -46,10 +46,10 @@ public:
 
   int Translate(int virtualAddress);
 
-private:
   /// Assume linear page table translation for now!
   TranslationEntry *pageTable;
 
+private:
   /// Number of pages in the virtual address space.
   unsigned numPages;
 };

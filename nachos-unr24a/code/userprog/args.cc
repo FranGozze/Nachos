@@ -26,7 +26,7 @@ static inline bool CountArgsToSave(int address, unsigned *count)
   {
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
+    for (unsigned j = 0; j < 5 && !b; j++)
       b = machine->ReadMem(address + 4 * c, 4, &val);
     if (!b)
       ASSERT(false);
@@ -71,7 +71,7 @@ SaveArgs(int address)
     // For each pointer, read the corresponding string.
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
+    for (unsigned j = 0; j < 5 && !b; j++)
       b = machine->ReadMem(address + i * 4, 4, &strAddr);
     if (!b)
       ASSERT(false);
@@ -121,7 +121,7 @@ WriteArgs(char **args)
   {
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
+    for (unsigned j = 0; j < 5 && !b; j++)
       b = machine->WriteMem(sp + 4 * i, 4, argsAddress[i]);
     if (!b)
       ASSERT(false);
@@ -131,7 +131,7 @@ WriteArgs(char **args)
   }
 #ifdef USE_TLB
   int b = 0;
-  for (unsigned i = 0; i < 5 && !b; i++)
+  for (unsigned j = 0; j < 5 && !b; j++)
     b = machine->WriteMem(sp + 4 * c, 4, 0);
   if (!b)
     ASSERT(false);

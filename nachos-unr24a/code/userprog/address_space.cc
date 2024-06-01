@@ -147,7 +147,15 @@ void AddressSpace::SaveState()
 #ifdef USE_TLB
   for (unsigned i = 0; i < TLB_SIZE; i++)
   {
-    machine->GetMMU()->TLBSaveEntry(i);
+
+    machine->GetMMU()->tlb[i].valid = false;
+    unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
+    TranslationEntry *entry = &pageTable[vPage];
+    entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
+    entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
+    entry->valid = false;
+    entry->use = machine->GetMMU()->tlb[i].use;
+    entry->dirty = machine->GetMMU()->tlb[i].dirty;
   }
 #endif
 }

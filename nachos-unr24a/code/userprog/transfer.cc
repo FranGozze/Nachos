@@ -13,16 +13,16 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
   ASSERT(outBuffer != nullptr);
   ASSERT(byteCount != 0);
 
-  for (unsigned count = 0; count < byteCount; count++, outBuffer++)
+  for (unsigned count = 0; count < byteCount; count++, outBuffer++, userAddress++)
   {
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
-      b = machine->ReadMem(userAddress++, 1, (int *)outBuffer);
+    for (unsigned j = 0; j < 5 && !b; j++)
+      b = machine->ReadMem(userAddress, 1, (int *)outBuffer);
     if (!b)
       ASSERT(false);
 #else
-    ASSERT(machine->ReadMem(userAddress++, 1, (int *)outBuffer));
+    ASSERT(machine->ReadMem(userAddress, 1, (int *)outBuffer));
 #endif
     DEBUG('e', "ReadBufferFromUser: %d\n", userAddress);
   }
@@ -43,14 +43,15 @@ bool ReadStringFromUser(int userAddress, char *outString,
     count++;
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
-      b = machine->ReadMem(userAddress++, 1, &temp);
+    for (unsigned j = 0; j < 5 && !b; j++)
+      b = machine->ReadMem(userAddress, 1, &temp);
     if (!b)
       ASSERT(false);
 #else
-    ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+    ASSERT(machine->ReadMem(userAddress, 1, &temp));
 #endif
     *outString = (unsigned char)temp;
+    userAddress++;
   } while (*outString++ != '\0' && count < maxByteCount);
 
   return *(outString - 1) == '\0';
@@ -63,16 +64,16 @@ void WriteBufferToUser(const char *buffer, int userAddress,
   ASSERT(buffer != nullptr);
   ASSERT(byteCount != 0);
 
-  for (unsigned count = 0; count < byteCount; count++, buffer++)
+  for (unsigned count = 0; count < byteCount; count++, buffer++, userAddress++)
   {
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
-      b = machine->WriteMem(userAddress++, 1, *buffer);
+    for (unsigned j = 0; j < 5 && !b; j++)
+      b = machine->WriteMem(userAddress, 1, *buffer);
     if (!b)
       ASSERT(false);
 #else
-    ASSERT(machine->WriteMem(userAddress++, 1, *buffer));
+    ASSERT(machine->WriteMem(userAddress, 1, *buffer));
 #endif
   }
 }
@@ -82,16 +83,16 @@ void WriteStringToUser(const char *string, int userAddress)
   ASSERT(userAddress != 0);
   ASSERT(string != nullptr);
 
-  for (; *string != '\0'; string++)
+  for (; *string != '\0'; string++, userAddress++)
   {
 #ifdef USE_TLB
     int b = 0;
-    for (unsigned i = 0; i < 5 && !b; i++)
-      b = machine->WriteMem(userAddress++, 1, *string);
+    for (unsigned j = 0; j < 5 && !b; j++)
+      b = machine->WriteMem(userAddress, 1, *string);
     if (!b)
       ASSERT(false);
 #else
-    ASSERT(machine->WriteMem(userAddress++, 1, *string));
+    ASSERT(machine->WriteMem(userAddress, 1, *string));
 #endif
   }
 }

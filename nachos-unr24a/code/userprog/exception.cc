@@ -333,25 +333,11 @@ SyscallHandler(ExceptionType _et)
 
 static void PageFaultHandler(ExceptionType et)
 {
-  unsigned vpn = machine->ReadRegister(BAD_VADDR_REG);
-  for (unsigned i = 0; i < machine->GetMMU()->pageTableSize; i++)
-  {
-    TranslationEntry *e = &machine->GetMMU()->pageTable[i];
-    if (e->virtualPage == vpn)
-    {
-      if (e->valid)
-      {
-        if (machine->GetMMU()->lastTlbEntry % TLB_SIZE == TLB_SIZE - 1)
-        {
-          machine->GetMMU()->tlb[machine->GetMMU()->lastTlbEntry] = *e;
-          machine->GetMMU()->lastTlbEntry = 0;
-        }
-        else
-          machine->GetMMU()->tlb[machine->GetMMU()->lastTlbEntry++] = *e;
-      }
-      // else aca iriamos al swap
-    }
-  }
+  unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
+  unsigned vpn = vAddr / PAGE_SIZE;
+  TranslationEntry *entry = &currentThread->space->pageTable[vpn];
+  entry->valid = true;
+  machine->GetMMU()->TLBLoadEntry(entry);
 }
 
 static void ReadOnlyHandler(ExceptionType et)

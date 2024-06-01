@@ -291,3 +291,14 @@ MMU::Translate(unsigned virtAddr, unsigned *physAddr,
   DEBUG_CONT('a', "physical address 0x%X\n", *physAddr);
   return NO_EXCEPTION;
 }
+
+void MMU::TLBLoadEntry(TranslationEntry *entry)
+{
+  tlb[lastTlbEntry].virtualPage = entry->virtualPage;
+  tlb[lastTlbEntry].physicalPage = entry->physicalPage;
+  tlb[lastTlbEntry].valid = entry->valid;
+  tlb[lastTlbEntry].readOnly = entry->readOnly;
+  tlb[lastTlbEntry].use = entry->use;
+  tlb[lastTlbEntry++].dirty = entry->dirty;
+  lastTlbEntry = lastTlbEntry % TLB_SIZE;
+}

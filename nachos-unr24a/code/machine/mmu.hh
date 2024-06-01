@@ -76,6 +76,7 @@ public:
   unsigned lastTlbEntry;
   TranslationEntry *pageTable;
   unsigned pageTableSize;
+  void TLBLoadEntry(TranslationEntry *entry);
 
 private:
   /// Retrieve a page entry either from a page table or the TLB.
