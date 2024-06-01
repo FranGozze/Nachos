@@ -213,7 +213,6 @@ SyscallHandler(ExceptionType _et)
     if (fid == CONSOLE_INPUT)
       for (; lenght < size; lenght++)
         buffer[lenght] = synchConsole->GetChar();
-
     else
     {
       OpenFile *file = currentThread->fileDescriptors->Get(fid - 2);
@@ -332,7 +331,7 @@ SyscallHandler(ExceptionType _et)
   IncrementPC();
 }
 
-static void PageFaultHander(ExceptionType et)
+static void PageFaultHandler(ExceptionType et)
 {
   unsigned vpn = machine->ReadRegister(BAD_VADDR_REG);
   for (unsigned i = 0; i < machine->GetMMU()->pageTableSize; i++)
@@ -355,14 +354,25 @@ static void PageFaultHander(ExceptionType et)
   }
 }
 
+static void ReadOnlyHandler(ExceptionType et)
+{
+  fprintf(stderr, "Read only exception.\n");
+}
+
 /// By default, only system calls have their own handler.  All other
 /// exception types are assigned the default handler.
 void SetExceptionHandlers()
 {
   machine->SetHandler(NO_EXCEPTION, &DefaultHandler);
   machine->SetHandler(SYSCALL_EXCEPTION, &SyscallHandler);
+#ifdef USE_TLB
+  machine->SetHandler(PAGE_FAULT_EXCEPTION, &PageFaultHandler);
+  machine->SetHandler(READ_ONLY_EXCEPTION, &ReadOnlyHandler);
+#else
   machine->SetHandler(PAGE_FAULT_EXCEPTION, &DefaultHandler);
   machine->SetHandler(READ_ONLY_EXCEPTION, &DefaultHandler);
+#endif
+
   machine->SetHandler(BUS_ERROR_EXCEPTION, &DefaultHandler);
   machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
   machine->SetHandler(OVERFLOW_EXCEPTION, &DefaultHandler);
