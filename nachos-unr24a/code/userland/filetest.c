@@ -17,9 +17,9 @@ int main(void)
   int o = Open("test.txt");
   Write("Hello world\n", 12, CONSOLE_OUTPUT);
   char buf[12], buf2[12];
-  Read(buf, 12, CONSOLE_INPUT);
-  Write(buf, 12, CONSOLE_OUTPUT);
-  Write(buf, 12, o);
+  // Read(buf, 12, CONSOLE_INPUT);
+  // Write(buf, 12, CONSOLE_OUTPUT);
+  // Write(buf, 12, o);
   Close(o);
   o = Open("test.txt");
   Read(buf2, 12, o);

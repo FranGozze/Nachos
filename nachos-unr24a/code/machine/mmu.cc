@@ -46,10 +46,14 @@ MMU::MMU(unsigned aNumPhysPages)
   }
   pageTable = nullptr;
   lastTlbEntry = 0;
+
 #else // Use linear page table.
   tlb = nullptr;
   pageTable = nullptr;
 #endif
+
+  requestAmount = 0;
+  missAmount = 0;
 }
 
 MMU::~MMU()
@@ -177,7 +181,6 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
   if (tlb == nullptr)
   {
     // Use a page table; `vpn` is an index in the table.
-
     if (vpn >= pageTableSize)
     {
       DEBUG_CONT('a', "virtual page # %u too large for"
@@ -192,14 +195,12 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
                  vpn, pageTableSize);
       return PAGE_FAULT_EXCEPTION;
     }
-
     *entry = &pageTable[vpn];
     return NO_EXCEPTION;
   }
   else
   {
     // Use the TLB.
-
     unsigned i;
     for (i = 0; i < TLB_SIZE; i++)
     {
@@ -210,7 +211,6 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
         return NO_EXCEPTION;
       }
     }
-
     // Not found.
     DEBUG_CONT('a', "no valid TLB entry found for this virtual page!\n");
     return PAGE_FAULT_EXCEPTION; // Really, this is a TLB fault, the
@@ -256,6 +256,7 @@ MMU::Translate(unsigned virtAddr, unsigned *physAddr,
 
   TranslationEntry *entry;
   ExceptionType exception = RetrievePageEntry(vpn, &entry);
+  requestAmount++;
 
   if (exception != NO_EXCEPTION)
   {

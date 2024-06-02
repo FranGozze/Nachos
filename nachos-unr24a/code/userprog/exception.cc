@@ -260,6 +260,7 @@ SyscallHandler(ExceptionType _et)
     if (status)
       DEBUG('e', "Wrong status exit: %d\n", status);
 
+    DEBUG('p', "Thread %d finished with hitrate: %d of %d\n", currentThread->pid, machine->GetMMU()->requestAmount - machine->GetMMU()->missAmount, machine->GetMMU()->requestAmount);
     currentThread->Finish(status);
     break;
   }
@@ -333,10 +334,13 @@ SyscallHandler(ExceptionType _et)
 
 static void PageFaultHandler(ExceptionType et)
 {
+  DEBUG('e', "Page fault exception.\n");
   unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
   unsigned vpn = vAddr / PAGE_SIZE;
   TranslationEntry *entry = &currentThread->space->pageTable[vpn];
   entry->valid = true;
+  machine->GetMMU()->missAmount++;
+
   machine->GetMMU()->TLBLoadEntry(entry);
 }
 
