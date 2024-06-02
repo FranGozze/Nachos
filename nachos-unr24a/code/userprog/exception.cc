@@ -260,7 +260,7 @@ SyscallHandler(ExceptionType _et)
     if (status)
       DEBUG('e', "Wrong status exit: %d\n", status);
 
-    DEBUG('p', "Thread %d finished with hitrate: %d of %d\n", currentThread->pid, machine->GetMMU()->requestAmount - machine->GetMMU()->missAmount, machine->GetMMU()->requestAmount);
+    DEBUG('z', "Thread %d finished with hitrate: %d of %d\n", currentThread->pid, machine->GetMMU()->requestAmount - machine->GetMMU()->missAmount, machine->GetMMU()->requestAmount);
     currentThread->Finish(status);
     break;
   }
@@ -270,7 +270,8 @@ SyscallHandler(ExceptionType _et)
     char filename[FILE_NAME_MAX_LEN + 1];
     getFileName(filename);
     int joinable = machine->ReadRegister(5);
-    if (OpenFile *file = fileSystem->Open(filename))
+    OpenFile *file = fileSystem->Open(filename);
+    if (file)
     {
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
@@ -294,7 +295,8 @@ SyscallHandler(ExceptionType _et)
     getFileName(filename);
     char **args = SaveArgs(machine->ReadRegister(5));
     int joinable = machine->ReadRegister(6);
-    if (OpenFile *file = fileSystem->Open(filename))
+    OpenFile *file = fileSystem->Open(filename);
+    if (file)
     {
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
@@ -334,13 +336,21 @@ SyscallHandler(ExceptionType _et)
 
 static void PageFaultHandler(ExceptionType et)
 {
+  machine->GetMMU()->missAmount++;
   DEBUG('e', "Page fault exception.\n");
   unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
   unsigned vpn = vAddr / PAGE_SIZE;
   TranslationEntry *entry = &currentThread->space->pageTable[vpn];
   entry->valid = true;
-  machine->GetMMU()->missAmount++;
 
+#ifdef DEMAND_LOADING
+  if (entry->virtualPage == currentThread->space->numPages + 1)
+  {
+    entry->physicalPage = currentThread->space->LoadPage(vpn);
+    entry->virtualPage = vpn;
+  }
+#endif
+  DEBUG('e', "Page fault exception2.\n");
   machine->GetMMU()->TLBLoadEntry(entry);
 }
 

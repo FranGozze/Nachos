@@ -24,7 +24,7 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
 #else
     ASSERT(machine->ReadMem(userAddress, 1, (int *)outBuffer));
 #endif
-    DEBUG('e', "ReadBufferFromUser: %d\n", userAddress);
+    // DEBUG('e', "ReadBufferFromUser: %d\n", userAddress);
   }
   *outBuffer = '\0';
 }
