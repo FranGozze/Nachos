@@ -211,7 +211,34 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
   char *mainMemory = machine->mainMemory;
   memset(&mainMemory[realAddr], 0, PAGE_SIZE);
   // Executable exe(fexe);
-  exe->ReadCodeBlock(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+  uint32_t initCodePage = exe->GetCodeAddr() / PAGE_SIZE;
+  uint32_t endCodePage = (exe->GetCodeAddr() + exe->GetCodeSize()) / PAGE_SIZE;
+  uint32_t initDataPage = exe->GetInitDataAddr() / PAGE_SIZE;
+  uint32_t endDataPage = (exe->GetInitDataAddr() + exe->GetInitDataSize()) / PAGE_SIZE;
+  DEBUG('a', "ICP: %u, ECP: %u, IDP: %u, EDP: %u\n", initCodePage, endCodePage, initDataPage, endDataPage);
+
+  if (exe->GetCodeSize() > 0 && initCodePage <= virtualPage && virtualPage <= endCodePage)
+  {
+    // if (endCodePage == initDataPage && virtualPage == endCodePage)
+    // {
+    //   unsigned offset = (exe->GetInitDataAddr() - (virtualPage * PAGE_SIZE));
+    //   DEBUG('k', "Dadrdr: %u, lPageAd dr: %u div:  %u\n", exe->GetInitDataAddr(), (virtualPage * PAGE_SIZE), offset);
+    //   for (unsigned i = 0; i < offset; i++)
+    //     exe->ReadCodeBlock(&mainMemory[realAddr + i], 1, (virtualPage * PAGE_SIZE) + i);
+    // }
+    // else
+    exe->ReadCodeBlock(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+  }
+  else if (exe->GetInitDataSize() > 0 && initDataPage <= virtualPage && virtualPage <= endDataPage)
+  {
+    // if (endCodePage == initDataPage && virtualPage == initDataPage)
+    // {
+    //   for (unsigned i = offset; i < (initDataPage + 1) * PAGE_SIZE; i++)
+    //     exe->ReadDataBlock(&mainMemory[realAddr + i], 1, (virtualPage * PAGE_SIZE) + i);
+    // }
+    // else
+    exe->ReadDataBlock(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+  }
   DEBUG('a', "Demand Loaded addr %u\n", realAddr);
   return frame;
 }
