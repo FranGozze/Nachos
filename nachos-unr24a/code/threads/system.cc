@@ -26,7 +26,6 @@ Interrupt *interrupt;        ///< Interrupt status.
 Statistics *stats;           ///< Performance metrics.
 Timer *timer;                ///< The hardware timer device, for invoking
                              ///< context switches.
-
 #ifdef FILESYS_NEEDED
 FileSystem *fileSystem;
 #endif
@@ -36,9 +35,11 @@ SynchDisk *synchDisk;
 #endif
 
 #ifdef USER_PROGRAM // Requires either *FILESYS* or *FILESYS_STUB*.
+Machine *machine;   ///< User program memory and registers.
 #include "userprog/SynchConsole.hh"
 SynchConsole *synchConsole;
-Machine *machine; ///< User program memory and registers.
+#include "lib/bitmap.hh"
+Bitmap *freePhysicalPages;
 #include "lib/table.hh"
 Table<Thread *> *spaceThreads;
 #endif
@@ -216,6 +217,7 @@ void Initialize(int argc, char **argv)
   Debugger *d = debugUserProg ? new Debugger : nullptr;
 
   machine = new Machine(d, numPhysicalPages); // This must come first.
+  freePhysicalPages = new Bitmap(numPhysicalPages);
   SetExceptionHandlers();
   synchConsole = new SynchConsole(nullptr, nullptr);
 

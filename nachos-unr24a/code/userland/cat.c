@@ -22,10 +22,15 @@ int main(int argc, char *argv[])
   int fid = Open(argv[1]);
   if (fid != -1)
   {
-    int length = Read(buffer, MAX_LENGTH, fid);
+    int length = 0;
+    do
+    {
+      length = Read(buffer, MAX_LENGTH, fid);
 
-    for (int i = 0; i < length; i++)
-      Write(&buffer[i], 1, CONSOLE_OUTPUT);
+      for (int i = 0; i < length; i++)
+        Write(&buffer[i], 1, CONSOLE_OUTPUT);
+    } while (length == MAX_LENGTH);
+    Write("\n", 1, CONSOLE_OUTPUT);
   }
   else
   {

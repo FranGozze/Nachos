@@ -116,6 +116,9 @@ int main(void)
   {
     WritePrompt(OUTPUT);
     const unsigned lineSize = ReadLine(line, MAX_LINE_SIZE, INPUT);
+    if (lineSize == 0)
+      continue;
+
     if (!lineSize)
       Halt();
 

@@ -322,7 +322,13 @@ SyscallHandler(ExceptionType _et)
   {
     SpaceId id = machine->ReadRegister(4);
     Thread *t = spaceThreads->Get(id);
-    machine->WriteRegister(2, t->Join());
+    if (t)
+      machine->WriteRegister(2, t->Join());
+    else
+    {
+      DEBUG('e', "'Join' not valid processID %d \n", id);
+      machine->WriteRegister(2, -1);
+    }
 
     break;
   }

@@ -1,5 +1,4 @@
 /// Outputs arguments entered on the command line.
-
 #include "syscall.h"
 #include "lib.h"
 #define ARGC_ERROR "Error: missing argument."
@@ -20,13 +19,17 @@ int main(int argc, char *argv[])
   if (fid != -1)
   {
     char buffer[MAX_LENGTH_FILE];
-    int length = Read(buffer, MAX_LENGTH_FILE, fid);
 
     int fid2 = Open(argv[2]);
     if (fid2 != -1)
     {
-      Write("hola\n", 5, CONSOLE_OUTPUT);
-      Write(buffer, length, fid2);
+      int length = 0;
+      do
+      {
+        length = Read(buffer, MAX_LENGTH_FILE, fid);
+        for (int i = 0; i < length; i++)
+          Write(&buffer[i], 1, fid2);
+      } while (length == MAX_LENGTH_FILE);
     }
     else
     {
@@ -34,7 +37,13 @@ int main(int argc, char *argv[])
 
       fid2 = Open(argv[2]);
 
-      Write(buffer, length, fid2);
+      int length = 0;
+      do
+      {
+        length = Read(buffer, MAX_LENGTH_FILE, fid);
+        for (int i = 0; i < length; i++)
+          Write(&buffer[i], 1, fid2);
+      } while (length == MAX_LENGTH_FILE);
     }
   }
   else

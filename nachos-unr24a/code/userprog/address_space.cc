@@ -33,9 +33,9 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
   // Check we are not trying to run anything too big -- at least until we
   // have virtual memory.
   DEBUG('e', "Initializing address space, num pages %u, size %u\n",
-        numPages, machine->freePhysicalPages->CountClear());
+        numPages, freePhysicalPages->CountClear());
 #ifndef DEMAND_LOADING
-  ASSERT(numPages <= machine->freePhysicalPages->CountClear());
+  ASSERT(numPages <= freePhysicalPages->CountClear());
 #endif
 
   DEBUG('a', "Initializing address space, num pages %u, size %u\n",
@@ -54,7 +54,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 #endif
 
 #ifndef DEMAND_LOADING
-    pageTable[i].physicalPage = machine->freePhysicalPages->Find();
+    pageTable[i].physicalPage = freePhysicalPages->Find();
 #endif
     pageTable[i].valid = true;
     pageTable[i].use = false;
@@ -117,8 +117,7 @@ AddressSpace::~AddressSpace()
     if (pageTable[i].virtualPage == numPages + 1)
       continue;
 #endif
-    machine->freePhysicalPages->Clear(pageTable[i].physicalPage);
-    memset(&machine->mainMemory[pageTable[i].physicalPage * PAGE_SIZE], 0, PAGE_SIZE);
+    freePhysicalPages->Clear(pageTable[i].physicalPage);
   }
 
 #endif
@@ -206,7 +205,7 @@ int AddressSpace::Translate(int virtualAddr)
 unsigned AddressSpace::LoadPage(unsigned virtualPage)
 {
   DEBUG('a', "Demand Loading page %u\n", virtualPage);
-  unsigned frame = machine->freePhysicalPages->Find();
+  unsigned frame = freePhysicalPages->Find();
   unsigned realAddr = frame * PAGE_SIZE;
   char *mainMemory = machine->mainMemory;
   memset(&mainMemory[realAddr], 0, PAGE_SIZE);

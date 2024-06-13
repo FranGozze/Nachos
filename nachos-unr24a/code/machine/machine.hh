@@ -127,8 +127,6 @@ public:
 
   unsigned GetNumPhysicalPages();
 
-  Bitmap *freePhysicalPages;
-
 private:
   SingleStepper *singleStepper; ///< Drop back into the method of a
                                 ///< provided object (may be a debugger)
