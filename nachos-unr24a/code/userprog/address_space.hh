@@ -50,11 +50,19 @@ public:
   unsigned LoadPage(unsigned virtualPage);
   /// Assume linear page table translation for now!
   TranslationEntry *pageTable;
+  /// Number of pages in the virtual address space.
   unsigned numPages;
 
+#ifdef SWAP
+  int PickVictim();
+  void RemovePage();
+#endif
 private:
-  /// Number of pages in the virtual address space.
   Executable *exe;
+
+#ifdef SWAP
+  OpenFile *swapFile;
+#endif
 };
 
 #endif
