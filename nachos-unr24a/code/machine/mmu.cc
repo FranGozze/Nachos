@@ -32,6 +32,7 @@
 #include "endianness.hh"
 
 #include <stdio.h>
+#include "threads/system.hh"
 extern Machine *machine;
 
 MMU::MMU(unsigned aNumPhysPages)
@@ -51,9 +52,6 @@ MMU::MMU(unsigned aNumPhysPages)
   tlb = nullptr;
   pageTable = nullptr;
 #endif
-
-  requestAmount = 0;
-  missAmount = 0;
 }
 
 MMU::~MMU()
@@ -260,7 +258,10 @@ MMU::Translate(unsigned virtAddr, unsigned *physAddr,
 
   TranslationEntry *entry;
   ExceptionType exception = RetrievePageEntry(vpn, &entry);
-  requestAmount++;
+  if (writing)
+    stats->numDiskWrites++;
+  else
+    stats->numDiskReads++;
   if (exception != NO_EXCEPTION)
   {
     return exception;
