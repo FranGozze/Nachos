@@ -51,5 +51,8 @@ extern FileSystem *fileSystem;
 #include "filesys/synch_disk.hh"
 extern SynchDisk *synchDisk;
 #endif
+#ifdef SWAP
+extern unsigned nextVictim;
+#endif
 
 #endif

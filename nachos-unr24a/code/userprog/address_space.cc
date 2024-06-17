@@ -296,13 +296,47 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 #ifdef SWAP
 int AddressSpace::PickVictim()
 {
-  return SystemDep::Random() % machine->GetNumPhysicalPages();
+  unsigned victim = -1;
+#ifdef PRPOLICY_FIFO
+  victim = nextVictim;
+  nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
+
+#elif PRPOLICY_CLOCK
+  //  (use, dirty)
+  //  (0,0),  (0,1) y seteas use en 0, (0,0), (0,1)
+  unsigned old_victim = nextVictim;
+  for (unsigned i = 0; i < 4 && victim == -1; i++)
+  {
+    if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 0 && i % 2 == 0)
+      victim = nextVictim;
+    else if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 1 && i % 2 == 1)
+      victim = nextVictim;
+    if (i == 1)
+      pageTable[nextVictim].use = 0;
+
+    nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
+
+    for (; nextVictim != oldVictim && victim == -1; nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages())
+    {
+      if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 0 && i % 2 == 0)
+        victim = nextVictim;
+      else if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 1 && i % 2 == 1)
+        victim = nextVictim;
+      if (i == 1)
+        pageTable[nextVictim].use = 0;
+    }
+  }
+#else // random
+  victim = SystemDep::Random();
+#endif
+  DEBUG('a', "Victim %u\n", victim);
+  return victim % machine->GetNumPhysicalPages();
 }
 
 void AddressSpace::RemovePage()
 {
   int victim = PickVictim();
-  DEBUG('z', "Removing page %u\n", victim);
+  DEBUG('a', "Removing page %u\n", victim);
 
   unsigned vPage = freePhysicalPages->coremapEntries[victim].virtualPage;
   TranslationEntry *entry = &pageTable[vPage];

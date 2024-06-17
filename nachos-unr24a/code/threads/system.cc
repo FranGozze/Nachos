@@ -44,6 +44,10 @@ Bitmap *freePhysicalPages;
 Table<Thread *> *spaceThreads;
 #endif
 
+#ifdef SWAP
+unsigned nextVictim = 0;
+#endif
+
 // External definition, to allow us to take a pointer to this function.
 extern void
 Cleanup();

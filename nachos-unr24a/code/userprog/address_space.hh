@@ -56,6 +56,7 @@ public:
 #ifdef SWAP
   int PickVictim();
   void RemovePage();
+
 #endif
 private:
   Executable *exe;
