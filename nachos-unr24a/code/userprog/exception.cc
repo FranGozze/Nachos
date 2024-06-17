@@ -260,7 +260,7 @@ SyscallHandler(ExceptionType _et)
     if (status)
       DEBUG('e', "Wrong status exit: %d\n", status);
 
-    DEBUG('z', "Thread %d finished with missrate: %d of %d (%f %)\n", currentThread->pid, stats->numDiskReads - stats->numPageFaults, stats->numDiskReads, (float)(stats->numDiskReads - stats->numPageFaults) / stats->numDiskReads * 100);
+    DEBUG('z', "Thread %d finished with hitrate: %d of %d (%f %)\n", currentThread->pid, stats->numDiskReads - stats->numPageFaults, stats->numDiskReads, (float)(stats->numDiskReads - stats->numPageFaults) / stats->numDiskReads * 100);
     currentThread->Finish(status);
     break;
   }
