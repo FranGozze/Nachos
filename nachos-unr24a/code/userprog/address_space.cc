@@ -304,7 +304,7 @@ int AddressSpace::PickVictim()
 #elif PRPOLICY_CLOCK
   //  (use, dirty)
   //  (0,0),  (0,1) y seteas use en 0, (0,0), (0,1)
-  unsigned old_victim = nextVictim;
+  unsigned oldVictim = nextVictim;
   for (unsigned i = 0; i < 4 && victim == -1; i++)
   {
     if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 0 && i % 2 == 0)
