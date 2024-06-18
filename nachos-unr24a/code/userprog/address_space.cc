@@ -126,7 +126,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
-#ifdef MULTIPROGRAMMING
+
   for (unsigned i = 0; i < numPages; i++)
   {
 #ifdef DEMAND_LOADING
@@ -136,9 +136,11 @@ AddressSpace::~AddressSpace()
     freePhysicalPages->Clear(pageTable[i].physicalPage);
   }
 
-#endif
-
   delete[] pageTable;
+  delete exe;
+#ifdef SWAP
+  delete swapFile;
+#endif
 }
 
 /// Set the initial values for the user-level register set.
@@ -248,41 +250,51 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 
   freePhysicalPages->coremapEntries[frame].virtualPage = virtualPage;
   freePhysicalPages->coremapEntries[frame].thread = currentThread;
+
+#ifdef PRPOLICY_FIFO
+  if (fifoList->Has(frame) == false)
+    fifoList->Append(frame);
+#endif
 #endif
 
   unsigned realAddr = frame * PAGE_SIZE;
   char *mainMemory = machine->mainMemory;
+  unsigned vAddr = virtualPage * PAGE_SIZE;
   memset(&mainMemory[realAddr], 0, PAGE_SIZE);
 
   if (!pageTable[virtualPage].dirty)
   {
-    uint32_t initCodePage = exe->GetCodeAddr() / PAGE_SIZE;
-    uint32_t endCodePage = (exe->GetCodeAddr() + exe->GetCodeSize()) / PAGE_SIZE;
-    uint32_t initDataPage = exe->GetInitDataAddr() / PAGE_SIZE;
-    uint32_t endDataPage = (exe->GetInitDataAddr() + exe->GetInitDataSize()) / PAGE_SIZE;
-    DEBUG('a', "ICP: %u, ECP: %u, IDP: %u, EDP: %u\n", initCodePage, endCodePage, initDataPage, endDataPage);
-
-    if (exe->GetCodeSize() > 0 && initCodePage <= virtualPage && virtualPage <= endCodePage)
+    unsigned nread = 0;
+    uint32_t codeSize = exe->GetCodeSize(), codeAddr = exe->GetCodeAddr();
+    if (codeSize > 0 && codeAddr <= vAddr && vAddr <= codeAddr + codeSize)
     {
-      unsigned m = min(PAGE_SIZE, (exe->GetCodeAddr() + exe->GetCodeSize()) - (virtualPage * PAGE_SIZE));
+      unsigned m = min(PAGE_SIZE, codeSize - vAddr);
 
-      exe->ReadCodeBlock(&mainMemory[realAddr], m, virtualPage * PAGE_SIZE);
+      exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
+      nread += m;
     }
-    if (exe->GetInitDataSize() > 0 && initDataPage <= virtualPage && virtualPage <= endDataPage)
+    uint32_t initDataSize = exe->GetInitDataSize(), initDataAddr = exe->GetInitDataAddr();
+
+    if (nread < PAGE_SIZE && initDataSize > 0 && initDataAddr <= vAddr + nread && vAddr + nread <= initDataAddr + initDataSize)
     {
-      unsigned m = exe->GetInitDataAddr() - (virtualPage * PAGE_SIZE) < PAGE_SIZE ? exe->GetInitDataAddr() - (virtualPage * PAGE_SIZE) : 0;
+      unsigned offset = nread > 0 ? 0 : vAddr - initDataAddr;
+      unsigned size = min(initDataSize - offset, PAGE_SIZE - nread);
+      DEBUG('z', "size %u, offset: %u, vPage: %u, dataSize: %u , initAddr %u, endAddr %u \n", size, offset, virtualPage, initDataSize, initDataAddr, initDataAddr + initDataSize);
 
-      exe->ReadDataBlock(&mainMemory[realAddr + m], PAGE_SIZE - m, (virtualPage - initDataPage) * PAGE_SIZE);
+      exe->ReadDataBlock(&mainMemory[realAddr + nread], size, offset);
+      nread += size;
     }
+    ASSERT(nread <= PAGE_SIZE);
   }
   else
   {
 #ifdef SWAP
     DEBUG('a', "Page is dirty, reading to swap\n");
-    swapFile->ReadAt(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+    swapFile->ReadAt(&mainMemory[realAddr], PAGE_SIZE, vAddr);
 #endif
   }
-
+  pageTable[virtualPage].physicalPage = frame;
+  pageTable[virtualPage].valid = true;
   DEBUG('a', "Demand Loaded addr %u\n", realAddr);
   return frame;
 }
@@ -291,8 +303,9 @@ int AddressSpace::PickVictim()
 {
   int victim = -1;
 #ifdef PRPOLICY_FIFO
-  victim = nextVictim;
-  nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
+  ASSERT(!fifoList->IsEmpty());
+
+  victim = fifoList->Pop();
 
 #elif PRPOLICY_CLOCK
   //  (use, dirty)

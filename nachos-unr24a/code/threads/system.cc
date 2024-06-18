@@ -46,6 +46,9 @@ Table<Thread *> *spaceThreads;
 
 #ifdef SWAP
 unsigned nextVictim = 0;
+#ifdef PRPOLICY_FIFO
+List<int> *fifoList;
+#endif
 #endif
 
 // External definition, to allow us to take a pointer to this function.
@@ -217,6 +220,10 @@ void Initialize(int argc, char **argv)
   interrupt->Enable();
   SystemDep::CallOnUserAbort(Cleanup); // If user hits ctl-C...
 
+#ifdef PRPOLICY_FIFO
+  fifoList = new List<int>;
+#endif
+
 #ifdef USER_PROGRAM
   Debugger *d = debugUserProg ? new Debugger : nullptr;
 
@@ -264,6 +271,9 @@ void Cleanup()
   Thread *t = currentThread;
   currentThread = NULL;
   delete t;
+#ifdef PRPOLICY_FIFO
+  delete fifoList;
+#endif
 
   exit(0);
 }

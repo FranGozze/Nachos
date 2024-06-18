@@ -53,6 +53,9 @@ extern SynchDisk *synchDisk;
 #endif
 #ifdef SWAP
 extern unsigned nextVictim;
+#ifdef PRPOLICY_FIFO
+extern List<int> *fifoList;
+#endif
 #endif
 
 #endif
