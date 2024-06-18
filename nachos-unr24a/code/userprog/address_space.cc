@@ -300,16 +300,7 @@ int AddressSpace::PickVictim()
   unsigned oldVictim = nextVictim;
   for (unsigned i = 0; i < 4 && victim == -1; i++)
   {
-    if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 0 && i % 2 == 0)
-      victim = nextVictim;
-    else if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 1 && i % 2 == 1)
-      victim = nextVictim;
-    if (i == 1)
-      pageTable[nextVictim].use = 0;
-
-    nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
-
-    for (; nextVictim != oldVictim && victim == -1; nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages())
+    do
     {
       if (pageTable[nextVictim].use == 0 && pageTable[nextVictim].dirty == 0 && i % 2 == 0)
         victim = nextVictim;
@@ -317,8 +308,11 @@ int AddressSpace::PickVictim()
         victim = nextVictim;
       if (i == 1)
         pageTable[nextVictim].use = 0;
-    }
+
+      nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
+    } while (nextVictim != oldVictim && victim == -1);
   }
+
 #else // random
   victim = SystemDep::Random();
 #endif
@@ -332,20 +326,29 @@ void AddressSpace::RemovePage()
   DEBUG('a', "Removing page %u\n", victim);
 
   unsigned vPage = freePhysicalPages->coremapEntries[victim].virtualPage;
-  TranslationEntry *entry = &pageTable[vPage];
   for (unsigned i = 0; i < TLB_SIZE; i++)
   {
     if (machine->GetMMU()->tlb[i].virtualPage == vPage)
+    {
       machine->GetMMU()->tlb[i].valid = false;
+      unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
+      TranslationEntry *entry = &pageTable[vPage];
+      entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
+      entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
+      entry->valid = false;
+      entry->use = machine->GetMMU()->tlb[i].use;
+      entry->dirty = machine->GetMMU()->tlb[i].dirty;
+    }
   }
   Thread *t = freePhysicalPages->coremapEntries[victim].thread;
   t->space->pageTable[vPage].virtualPage = t->space->numPages + 1;
-  if (entry->dirty)
+
+  if (t->space->pageTable[vPage].dirty)
   {
     DEBUG('r', "Page is dirty, writing to swap\n");
     char *mainMemory = machine->mainMemory;
     unsigned realAddr = victim * PAGE_SIZE;
-    swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE);
+    t->space->swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE);
 
     stats->numSwapPages++;
   }
