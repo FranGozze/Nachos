@@ -14,3 +14,17 @@ nachos-unr24a/code/bin/disassemble
 nachos-unr24a/code/bin/coff2noff
 nachos-unr24a/code/bin/coff2flat
 *.txt
+
+nachos-unr24a/code/vmem/SWAP.0
+nachos-unr24a/code/userland/touch
+nachos-unr24a/code/userland/tinyshell
+nachos-unr24a/code/userland/sort
+nachos-unr24a/code/userland/shell
+nachos-unr24a/code/userland/rm
+nachos-unr24a/code/userland/matmult
+nachos-unr24a/code/userland/halt
+nachos-unr24a/code/userland/filetest
+nachos-unr24a/code/userland/echo
+nachos-unr24a/code/userland/cp
+nachos-unr24a/code/userland/cat
+nachos-unr24a/code/userland/SWAP.0
