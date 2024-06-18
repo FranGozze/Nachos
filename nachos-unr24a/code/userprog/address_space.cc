@@ -264,22 +264,15 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 
     if (exe->GetCodeSize() > 0 && initCodePage <= virtualPage && virtualPage <= endCodePage)
     {
-      // unsigned m = min(PAGE_SIZE, (exe->GetCodeAddr() + exe->GetCodeSize()) - (virtualPage * PAGE_SIZE));
-      // for (unsigned i = 0; i < m; i++)
-      //   exe->ReadCodeBlock(&mainMemory[realAddr + i], 1, (virtualPage * PAGE_SIZE) + i);
+      unsigned m = min(PAGE_SIZE, (exe->GetCodeAddr() + exe->GetCodeSize()) - (virtualPage * PAGE_SIZE));
 
-      exe->ReadCodeBlock(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+      exe->ReadCodeBlock(&mainMemory[realAddr], m, virtualPage * PAGE_SIZE);
     }
-    else if (exe->GetInitDataSize() > 0 && initDataPage <= virtualPage && virtualPage <= endDataPage)
+    if (exe->GetInitDataSize() > 0 && initDataPage <= virtualPage && virtualPage <= endDataPage)
     {
+      unsigned m = exe->GetInitDataAddr() - (virtualPage * PAGE_SIZE) < PAGE_SIZE ? exe->GetInitDataAddr() - (virtualPage * PAGE_SIZE) : 0;
 
-      // unsigned m = max(0, (exe->GetCodeAddr() + exe->GetCodeSize()) - (virtualPage * PAGE_SIZE));
-      // DEBUG('a', "m: %u\n", m);
-      // ASSERT(false);
-      // for (unsigned i = m; i < PAGE_SIZE; i++)
-      //   exe->ReadDataBlock(&mainMemory[realAddr + i], 1, (virtualPage * PAGE_SIZE) + i);
-
-      exe->ReadDataBlock(&mainMemory[realAddr], PAGE_SIZE, virtualPage * PAGE_SIZE);
+      exe->ReadDataBlock(&mainMemory[realAddr + m], PAGE_SIZE - m, (virtualPage - initDataPage) * PAGE_SIZE);
     }
   }
   else
@@ -296,7 +289,7 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 #ifdef SWAP
 int AddressSpace::PickVictim()
 {
-  unsigned victim = -1;
+  int victim = -1;
 #ifdef PRPOLICY_FIFO
   victim = nextVictim;
   nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
@@ -349,13 +342,15 @@ void AddressSpace::RemovePage()
   t->space->pageTable[vPage].virtualPage = t->space->numPages + 1;
   if (entry->dirty)
   {
-    DEBUG('a', "Page is dirty, writing to swap\n");
+    DEBUG('r', "Page is dirty, writing to swap\n");
     char *mainMemory = machine->mainMemory;
     unsigned realAddr = victim * PAGE_SIZE;
     swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE);
 
     stats->numSwapPages++;
   }
+  DEBUG('r', "Page removed: %u\n", victim);
+
   freePhysicalPages->Clear(victim);
 }
 
