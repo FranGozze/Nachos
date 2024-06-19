@@ -16,6 +16,7 @@
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
 #include "executable.hh"
+#include "lib/bitmap.hh"
 
 const unsigned USER_STACK_SIZE = 1024; ///< Increase this as necessary!
 
@@ -64,6 +65,7 @@ private:
 #ifdef SWAP
   OpenFile *swapFile;
 #endif
+  Bitmap *swapMap;
 };
 
 #endif

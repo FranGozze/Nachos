@@ -119,6 +119,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
   swapFile = fileSystem->Open(swapFileName);
   ASSERT(swapFile != nullptr);
 #endif
+  swapMap = new Bitmap(numPages);
 }
 
 /// Deallocate an address space.
@@ -262,20 +263,20 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
   unsigned vAddr = virtualPage * PAGE_SIZE;
   memset(&mainMemory[realAddr], 0, PAGE_SIZE);
 
-  if (!pageTable[virtualPage].dirty)
+  if (!swapMap->Test(virtualPage))
   {
     unsigned nread = 0;
     uint32_t codeSize = exe->GetCodeSize(), codeAddr = exe->GetCodeAddr();
     if (codeSize > 0 && codeAddr <= vAddr && vAddr <= codeAddr + codeSize)
     {
-      unsigned m = min(PAGE_SIZE, codeSize - vAddr);
+      unsigned m = min(PAGE_SIZE, (codeAddr + codeSize) - vAddr);
 
       exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
       nread += m;
     }
     uint32_t initDataSize = exe->GetInitDataSize(), initDataAddr = exe->GetInitDataAddr();
 
-    if (nread < PAGE_SIZE && initDataSize > 0 && initDataAddr <= vAddr + nread && vAddr + nread <= initDataAddr + initDataSize)
+    if (nread < PAGE_SIZE && initDataSize > 0 && initDataAddr <= vAddr + nread && vAddr + nread < initDataAddr + initDataSize)
     {
       unsigned offset = nread > 0 ? 0 : vAddr - initDataAddr;
       unsigned size = min(initDataSize - offset, PAGE_SIZE - nread);
@@ -291,6 +292,8 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 #ifdef SWAP
     DEBUG('a', "Page is dirty, reading to swap\n");
     swapFile->ReadAt(&mainMemory[realAddr], PAGE_SIZE, vAddr);
+    swapMap->Clear(virtualPage);
+    stats->numSwapInPages++;
 #endif
   }
   pageTable[virtualPage].physicalPage = frame;
@@ -356,14 +359,14 @@ void AddressSpace::RemovePage()
   Thread *t = freePhysicalPages->coremapEntries[victim].thread;
   t->space->pageTable[vPage].virtualPage = t->space->numPages + 1;
 
-  if (t->space->pageTable[vPage].dirty)
+  if (t->space->pageTable[vPage].dirty || t->space->swapMap->Test(vPage))
   {
     DEBUG('r', "Page is dirty, writing to swap\n");
     char *mainMemory = machine->mainMemory;
     unsigned realAddr = victim * PAGE_SIZE;
     t->space->swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE);
-
-    stats->numSwapPages++;
+    t->space->swapMap->Mark(vPage);
+    stats->numSwapOutPages++;
   }
   DEBUG('r', "Page removed: %u\n", victim);
 
