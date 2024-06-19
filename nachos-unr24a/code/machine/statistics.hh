@@ -46,7 +46,8 @@ public:
   /// Number of virtual memory page faults.
   unsigned long numPageFaults;
 
-  unsigned long numSwapPages;
+  unsigned long numSwapOutPages;
+  unsigned long numSwapInPages;
 
 #ifdef DFS_TICKS_FIX
   /// Number of times the tick count gets reset.
