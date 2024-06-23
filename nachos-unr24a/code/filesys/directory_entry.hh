@@ -6,8 +6,9 @@
 #ifndef NACHOS_FILESYS_DIRECTORYENTRY__HH
 #define NACHOS_FILESYS_DIRECTORYENTRY__HH
 
+
 /// For simplicity, we assume file names are <= 9 characters long.
-const unsigned FILE_NAME_MAX_LEN = 19;
+const unsigned FILE_NAME_MAX_LEN = 9;
 
 /// The following class defines a "directory entry", representing a file in
 /// the directory.  Each entry gives the name of the file, and where the
@@ -15,15 +16,15 @@ const unsigned FILE_NAME_MAX_LEN = 19;
 ///
 /// Internal data structures kept public so that Directory operations can
 /// access them directly.
-class DirectoryEntry
-{
+class DirectoryEntry {
 public:
-  /// Is this directory entry in use?
-  bool inUse;
-  /// Location on disk to find the `FileHeader` for this file.
-  unsigned sector;
-  /// Text name for file, with +1 for the trailing `'\0'`.
-  char name[FILE_NAME_MAX_LEN + 1];
+    /// Is this directory entry in use?
+    bool inUse;
+    /// Location on disk to find the `FileHeader` for this file.
+    unsigned sector;
+    /// Text name for file, with +1 for the trailing `'\0'`.
+    char name[FILE_NAME_MAX_LEN + 1];
 };
+
 
 #endif

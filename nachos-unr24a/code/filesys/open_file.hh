@@ -20,7 +20,7 @@
 #define NACHOS_FILESYS_OPENFILE__HH
 
 #include "lib/utility.hh"
-
+#include "filesys/synchFile.hh"
 #ifdef FILESYS_STUB // Temporarily implement calls to Nachos file system as
                     // calls to UNIX!  See definitions listed under `#else`.
 class OpenFile
@@ -89,7 +89,7 @@ class OpenFile
 {
 public:
   /// Open a file whose header is located at `sector` on the disk.
-  OpenFile(int sector);
+  OpenFile(FileHeader *sharedHdr, SynchFile *synch, unsigned fId);
 
   /// Close the file.
   ~OpenFile();
@@ -115,6 +115,8 @@ public:
 private:
   FileHeader *hdr;       ///< Header for this file.
   unsigned seekPosition; ///< Current position within the file.
+  SynchFile *synchFile;
+  unsigned id;
 };
 
 #endif

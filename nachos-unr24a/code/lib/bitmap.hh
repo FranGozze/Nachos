@@ -17,7 +17,6 @@
 #define NACHOS_LIB_BITMAP__HH
 
 #include "utility.hh"
-#include "coremap.hh"
 #include "filesys/open_file.hh"
 
 /// A “bitmap” -- an array of bits, each of which can be independently set,
@@ -70,10 +69,6 @@ public:
   /// Note: this is not needed until the *FILESYS* assignment, when we will
   /// need to read and write the bitmap to a file.
   void WriteBack(OpenFile *file) const;
-
-#ifdef SWAP
-  Coremap *coremapEntries;
-#endif
 
 private:
   /// Number of bits in the bitmap.

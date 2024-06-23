@@ -49,6 +49,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "threads/lock.hh"
+#include "synchFile.hh"
+
 /// Sectors containing the file headers for the bitmap of free sectors, and
 /// the directory of files.  These file headers are placed in well-known
 /// sectors, so that they can be located on boot-up.
@@ -64,15 +67,24 @@ static const unsigned DIRECTORY_SECTOR = 1;
 /// bitmap and the directory.
 ///
 /// * `format` -- should we initialize the disk?
+
 FileSystem::FileSystem(bool format)
 {
   DEBUG('f', "Initializing the file system.\n");
+
+  freeMapLock = new Lock("Freemap lock");
+  directoryLock = new Lock("Directory lock");
+
+  SynchFile *synchFreeMap = nullptr;
+  FileHeader *mapH = new FileHeader;
+
+  SynchFile *synchDirectory = nullptr;
+  FileHeader *dirH = new FileHeader;
+
   if (format)
   {
     Bitmap *freeMap = new Bitmap(NUM_SECTORS);
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    FileHeader *mapH = new FileHeader;
-    FileHeader *dirH = new FileHeader;
 
     DEBUG('f', "Formatting the file system.\n");
 
@@ -100,8 +112,8 @@ FileSystem::FileSystem(bool format)
     // The file system operations assume these two files are left open
     // while Nachos is running.
 
-    freeMapFile = new OpenFile(FREE_MAP_SECTOR);
-    directoryFile = new OpenFile(DIRECTORY_SECTOR);
+    freeMapFile = new OpenFile(mapH, synchFreeMap, 0);
+    directoryFile = new OpenFile(dirH, synchDirectory, 1);
 
     // Once we have the files “open”, we can write the initial version of
     // each file back to disk.  The directory at this point is completely
@@ -111,6 +123,7 @@ FileSystem::FileSystem(bool format)
 
     DEBUG('f', "Writing bitmap and directory back to disk.\n");
     freeMap->WriteBack(freeMapFile); // flush changes to disk
+
     dir->WriteBack(directoryFile);
 
     if (debug.IsEnabled('f'))
@@ -120,8 +133,6 @@ FileSystem::FileSystem(bool format)
 
       delete freeMap;
       delete dir;
-      delete mapH;
-      delete dirH;
     }
   }
   else
@@ -129,9 +140,15 @@ FileSystem::FileSystem(bool format)
     // If we are not formatting the disk, just open the files
     // representing the bitmap and directory; these are left open while
     // Nachos is running.
-    freeMapFile = new OpenFile(FREE_MAP_SECTOR);
-    directoryFile = new OpenFile(DIRECTORY_SECTOR);
+    mapH->FetchFrom(FREE_MAP_SECTOR);
+    freeMapFile = new OpenFile(mapH, synchFreeMap, 0);
+    dirH->FetchFrom(DIRECTORY_SECTOR);
+    directoryFile = new OpenFile(dirH, synchDirectory, 1);
   }
+
+  openFiles = new OpenFilesTable();
+  openFiles->AddFile(nullptr, mapH, synchFreeMap);
+  openFiles->AddFile(nullptr, dirH, synchDirectory);
 }
 
 FileSystem::~FileSystem()

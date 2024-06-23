@@ -35,13 +35,11 @@
 #ifndef NACHOS_FILESYS_FILESYSTEM__HH
 #define NACHOS_FILESYS_FILESYSTEM__HH
 
-
 #include "open_file.hh"
 
-
-#ifdef FILESYS_STUB  // Temporarily implement file system calls as calls to
-                     // UNIX, until the real file system implementation is
-                     // available.
+#ifdef FILESYS_STUB // Temporarily implement file system calls as calls to
+                    // UNIX, until the real file system implementation is
+                    // available.
 
 /// Constant definitions with dummy values.  For the stub filesystem they
 /// are not required, but system information tools expects them to be
@@ -50,99 +48,100 @@ static const unsigned FREE_MAP_FILE_SIZE = 0;
 static const unsigned NUM_DIR_ENTRIES = 0;
 static const unsigned DIRECTORY_FILE_SIZE = 0;
 
-
-class FileSystem {
+class FileSystem
+{
 public:
+  FileSystem(bool format) {}
 
-    FileSystem(bool format) {}
+  ~FileSystem() {}
 
-    ~FileSystem() {}
+  bool Create(const char *name, unsigned initialSize)
+  {
+    ASSERT(name != nullptr);
 
-    bool Create(const char *name, unsigned initialSize)
+    int fileDescriptor = SystemDep::OpenForWrite(name);
+    if (fileDescriptor == -1)
     {
-        ASSERT(name != nullptr);
-
-        int fileDescriptor = SystemDep::OpenForWrite(name);
-        if (fileDescriptor == -1) {
-            return false;
-        }
-        SystemDep::Close(fileDescriptor);
-        return true;
+      return false;
     }
+    SystemDep::Close(fileDescriptor);
+    return true;
+  }
 
-    OpenFile *Open(const char *name)
+  OpenFile *Open(const char *name)
+  {
+    ASSERT(name != nullptr);
+
+    int fileDescriptor = SystemDep::OpenForReadWrite(name, false);
+    if (fileDescriptor == -1)
     {
-        ASSERT(name != nullptr);
-
-        int fileDescriptor = SystemDep::OpenForReadWrite(name, false);
-        if (fileDescriptor == -1) {
-            return nullptr;
-        }
-        return new OpenFile(fileDescriptor);
+      return nullptr;
     }
+    return new OpenFile(fileDescriptor);
+  }
 
-    bool Remove(const char *name)
-    {
-        ASSERT(name != nullptr);
-        return SystemDep::Unlink(name) == 0;
-    }
-
+  bool Remove(const char *name)
+  {
+    ASSERT(name != nullptr);
+    return SystemDep::Unlink(name) == 0;
+  }
 };
 
-#else  // FILESYS
-
+#else // FILESYS
 
 #include "directory_entry.hh"
 #include "machine/disk.hh"
-
+#include "openFilesTable.hh"
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
 /// files that can be loaded onto the disk.
 static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
 static const unsigned NUM_DIR_ENTRIES = 10;
-static const unsigned DIRECTORY_FILE_SIZE
-  = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES;
+static const unsigned DIRECTORY_FILE_SIZE = sizeof(DirectoryEntry) * NUM_DIR_ENTRIES;
 
-
-class FileSystem {
+class Lock;
+class FileSystem
+{
 public:
+  /// Initialize the file system.  Must be called *after* `synchDisk` has
+  /// been initialized.
+  ///
+  /// If `format`, there is nothing on the disk, so initialize the
+  /// directory and the bitmap of free blocks.
+  FileSystem(bool format);
 
-    /// Initialize the file system.  Must be called *after* `synchDisk` has
-    /// been initialized.
-    ///
-    /// If `format`, there is nothing on the disk, so initialize the
-    /// directory and the bitmap of free blocks.
-    FileSystem(bool format);
+  ~FileSystem();
 
-    ~FileSystem();
+  /// Create a file (UNIX `creat`).
+  bool Create(const char *name, unsigned initialSize);
 
-    /// Create a file (UNIX `creat`).
-    bool Create(const char *name, unsigned initialSize);
+  /// Open a file (UNIX `open`).
+  OpenFile *Open(const char *name);
 
-    /// Open a file (UNIX `open`).
-    OpenFile *Open(const char *name);
+  /// Delete a file (UNIX `unlink`).
+  bool Remove(const char *name);
 
-    /// Delete a file (UNIX `unlink`).
-    bool Remove(const char *name);
+  /// List all the files in the file system.
+  void List();
 
-    /// List all the files in the file system.
-    void List();
+  /// Check the filesystem.
+  bool Check();
 
-    /// Check the filesystem.
-    bool Check();
-
-    /// List all the files and their contents.
-    void Print();
+  /// List all the files and their contents.
+  void Print();
 
 private:
-    OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
-                            ///< file.
-    OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
-                              ///< represented as a file.
+  OpenFile *freeMapFile;   ///< Bit map of free disk blocks, represented as a
+                           ///< file.
+  OpenFile *directoryFile; ///< “Root” directory -- list of file names,
+                           ///< represented as a file.
+  Lock *freeMapLock;       ///< Lock protecting the free map.
+  Lock *directoryLock;     ///< Lock protecting the directory.
+
+  OpenFilesTable *openFiles; ///< Table of open files.
 };
 
 #endif
-
 
 #endif
