@@ -16,7 +16,7 @@ struct FileInfo
   // Header of the file
   FileHeader *hdr;
   // Used to synchronize threads with the same file open
-  SynchFile *synch;
+  SynchFile *synchFile;
   // False if the file was deleted and cannot be opened anymore, true otherwise
   bool available;
   // Number of threads currently accesing this file

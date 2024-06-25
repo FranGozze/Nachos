@@ -1,12 +1,13 @@
 #ifndef NACHOS_LIB_SYNCHBITMAP_HH
 #define NACHOS_LIB_SYNCHBITMAP_HH
 
-#include "bitmap.hh"
+#include "lib/bitmap.hh"
 
+class Lock;
 class SynchBitmap
 {
 public:
-  SynchBitmap(unsigned nitems);
+  SynchBitmap(unsigned nitems, Lock *l);
   ~SynchBitmap();
   void Mark(unsigned which);
   void Clear(unsigned which);
@@ -20,6 +21,8 @@ public:
 
   void Request();
   void Flush();
+
+  Bitmap *GetBitmap();
 
 private:
   Bitmap *bitmap;

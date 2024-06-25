@@ -125,6 +125,10 @@ public:
   /// List all the files in the file system.
   void List();
 
+  void Close(int id);
+  /// Delete a file (UNIX `unlink`).
+  bool Delete(const char *name);
+
   /// Check the filesystem.
   bool Check();
 

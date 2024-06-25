@@ -15,7 +15,8 @@
 #include "threads/system.hh"
 
 #include <string.h>
-
+#include "synch_disk.hh"
+extern SynchDisk *synchDisk;
 /// Open a Nachos file for reading and writing.  Bring the file header into
 /// memory while the file is open.
 ///

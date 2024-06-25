@@ -52,6 +52,9 @@
 #include "threads/lock.hh"
 #include "synchFile.hh"
 
+#include "synchDirectory.hh"
+#include "synchBitmap.hh"
+
 /// Sectors containing the file headers for the bitmap of free sectors, and
 /// the directory of files.  These file headers are placed in well-known
 /// sectors, so that they can be located on boot-up.
@@ -83,21 +86,23 @@ FileSystem::FileSystem(bool format)
 
   if (format)
   {
-    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    SynchBitmap *freeMap = new SynchBitmap(NUM_SECTORS, freeMapLock);
+    SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
 
     DEBUG('f', "Formatting the file system.\n");
 
     // First, allocate space for FileHeaders for the directory and bitmap
     // (make sure no one else grabs these!)
+    freeMap->Request();
+
     freeMap->Mark(FREE_MAP_SECTOR);
     freeMap->Mark(DIRECTORY_SECTOR);
 
     // Second, allocate space for the data blocks containing the contents
     // of the directory and bitmap files.  There better be enough space!
-
-    ASSERT(mapH->Allocate(freeMap, FREE_MAP_FILE_SIZE));
-    ASSERT(dirH->Allocate(freeMap, DIRECTORY_FILE_SIZE));
+    ASSERT(mapH->Allocate(freeMap->GetBitmap(), FREE_MAP_FILE_SIZE));
+    ASSERT(dirH->Allocate(freeMap->GetBitmap(), DIRECTORY_FILE_SIZE));
+    freeMap->Flush();
 
     // Flush the bitmap and directory `FileHeader`s back to disk.
     // We need to do this before we can `Open` the file, since open reads
@@ -122,8 +127,9 @@ FileSystem::FileSystem(bool format)
     // to hold the file data for the directory and bitmap.
 
     DEBUG('f', "Writing bitmap and directory back to disk.\n");
+    freeMap->Request();
     freeMap->WriteBack(freeMapFile); // flush changes to disk
-
+    dir->Request();
     dir->WriteBack(directoryFile);
 
     if (debug.IsEnabled('f'))
@@ -189,7 +195,7 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
 
   DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
-  Directory *dir = new Directory(NUM_DIR_ENTRIES);
+  SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
   dir->FetchFrom(directoryFile);
 
   bool success;
@@ -200,7 +206,7 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
   }
   else
   {
-    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+    SynchBitmap *freeMap = new SynchBitmap(NUM_SECTORS, freeMapLock);
     freeMap->FetchFrom(freeMapFile);
     int sector = freeMap->Find();
     // Find a sector to hold the file header.
@@ -215,7 +221,7 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
     else
     {
       FileHeader *h = new FileHeader;
-      success = h->Allocate(freeMap, initialSize);
+      success = h->Allocate(freeMap->GetBitmap(), initialSize);
       // Fails if no space on disk for data.
       if (success)
       {
@@ -228,6 +234,8 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
     }
     delete freeMap;
   }
+  if (!success)
+    dir->Flush();
   delete dir;
   return success;
 }
@@ -243,19 +251,89 @@ OpenFile *
 FileSystem::Open(const char *name)
 {
   ASSERT(name != nullptr);
-
-  Directory *dir = new Directory(NUM_DIR_ENTRIES);
+  int fid;
   OpenFile *openFile = nullptr;
+  if ((fid = openFiles->Find(name)) == -1)
+  {
+    SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
 
-  DEBUG('f', "Opening file %s\n", name);
+    DEBUG('f', "Opening file %s\n", name);
+    dir->FetchFrom(directoryFile);
+    int sector = dir->Find(name);
+    if (sector >= 0)
+    {
+      FileHeader *hdr = new FileHeader;
+      hdr->FetchFrom(sector);
+
+      SynchFile *synchFile = new SynchFile;
+      fid = openFiles->AddFile(name, hdr, synchFile);
+      if (fid != -1)
+        openFile = new OpenFile(hdr, synchFile, fid); // `name` was found in directory.
+      else
+      {
+        delete hdr;
+        delete synchFile;
+      }
+    }
+    dir->Flush();
+    delete dir;
+  }
+  // If the file is already open, return the file.
+  else
+  {
+    FileInfo *finfo = openFiles->GetFileInfo(fid);
+    if (finfo->available)
+    {
+      finfo->nThreads++;
+      openFile = new OpenFile(finfo->hdr, finfo->synchFile, fid);
+    }
+  }
+  return openFile;
+}
+
+void FileSystem::Close(int fid)
+{
+  FileInfo *finfo = openFiles->GetFileInfo(fid);
+  finfo->nThreads--;
+  if (finfo->nThreads == 0)
+  {
+    if (!finfo->available)
+      this->Delete(finfo->name);
+    delete finfo->hdr;
+    delete finfo->synchFile;
+    openFiles->RemoveFile(fid);
+  }
+}
+
+bool FileSystem::Delete(const char *name)
+{
+  ASSERT(name != nullptr);
+  SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
+
   dir->FetchFrom(directoryFile);
   int sector = dir->Find(name);
-  if (sector >= 0)
+  if (sector == -1)
   {
-    openFile = new OpenFile(sector); // `name` was found in directory.
+    delete dir;
+    directoryLock->Release();
+    return false; // file not found
   }
+  FileHeader *fileH = new FileHeader;
+  fileH->FetchFrom(sector);
+
+  SynchBitmap *freeMap = new SynchBitmap(NUM_SECTORS, freeMapLock);
+  freeMap->FetchFrom(freeMapFile);
+
+  fileH->Deallocate(freeMap->GetBitmap()); // Remove data blocks.
+  freeMap->Clear(sector);                  // Remove header block.
+  dir->Remove(name);
+
+  freeMap->WriteBack(freeMapFile); // Flush to disk.
+  dir->WriteBack(directoryFile);   // Flush to disk.
+  delete fileH;
   delete dir;
-  return openFile; // Return null if not found.
+  delete freeMap;
+  return true;
 }
 
 /// Delete a file from the file system.
@@ -273,40 +351,25 @@ FileSystem::Open(const char *name)
 bool FileSystem::Remove(const char *name)
 {
   ASSERT(name != nullptr);
-
-  Directory *dir = new Directory(NUM_DIR_ENTRIES);
-  dir->FetchFrom(directoryFile);
-  int sector = dir->Find(name);
-  if (sector == -1)
+  int fid;
+  // If someone wants to remove one file, but it was being used by another thread, we just mark it as unavailable.
+  if ((fid = openFiles->Find(name)) != -1)
   {
-    delete dir;
-    return false; // file not found
+    FileInfo *finfo = openFiles->GetFileInfo(fid);
+    finfo->available = false;
   }
-  FileHeader *fileH = new FileHeader;
-  fileH->FetchFrom(sector);
-
-  Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-  freeMap->FetchFrom(freeMapFile);
-
-  fileH->Deallocate(freeMap); // Remove data blocks.
-  freeMap->Clear(sector);     // Remove header block.
-  dir->Remove(name);
-
-  freeMap->WriteBack(freeMapFile); // Flush to disk.
-  dir->WriteBack(directoryFile);   // Flush to disk.
-  delete fileH;
-  delete dir;
-  delete freeMap;
+  else
+    return this->Delete(name);
   return true;
 }
 
 /// List all the files in the file system directory.
 void FileSystem::List()
 {
-  Directory *dir = new Directory(NUM_DIR_ENTRIES);
-
+  SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
   dir->FetchFrom(directoryFile);
   dir->List();
+  dir->Flush();
   delete dir;
 }
 
