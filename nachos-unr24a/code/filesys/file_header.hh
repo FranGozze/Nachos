@@ -12,10 +12,8 @@
 #ifndef NACHOS_FILESYS_FILEHEADER__HH
 #define NACHOS_FILESYS_FILEHEADER__HH
 
-
 #include "raw_file_header.hh"
 #include "lib/bitmap.hh"
-
 
 /// The following class defines the Nachos "file header" (in UNIX terms, the
 /// “i-node”), describing where on disk to find all of the data in the file.
@@ -31,41 +29,46 @@
 /// There is no constructor; rather the file header can be initialized
 /// by allocating blocks for the file (if it is a new file), or by
 /// reading it from disk.
-class FileHeader {
+class FileHeader
+{
 public:
+  /// Initialize a file header, including allocating space on disk for the
+  /// file data.
+  bool Allocate(Bitmap *bitMap, unsigned fileSize);
 
-    /// Initialize a file header, including allocating space on disk for the
-    /// file data.
-    bool Allocate(Bitmap *bitMap, unsigned fileSize);
+  /// De-allocate this file's data blocks.
+  void Deallocate(Bitmap *bitMap);
 
-    /// De-allocate this file's data blocks.
-    void Deallocate(Bitmap *bitMap);
+  /// Initialize file header from disk.
+  void FetchFrom(unsigned sectorNumber);
 
-    /// Initialize file header from disk.
-    void FetchFrom(unsigned sectorNumber);
+  /// Write modifications to file header back to disk.
+  void WriteBack(unsigned sectorNumber);
 
-    /// Write modifications to file header back to disk.
-    void WriteBack(unsigned sectorNumber);
+  /// Convert a byte offset into the file to the disk sector containing the
+  /// byte.
+  unsigned ByteToSector(unsigned offset);
 
-    /// Convert a byte offset into the file to the disk sector containing the
-    /// byte.
-    unsigned ByteToSector(unsigned offset);
+  /// Return the length of the file in bytes
+  unsigned FileLength() const;
 
-    /// Return the length of the file in bytes
-    unsigned FileLength() const;
+  /// Print the contents of the file.
+  void Print(const char *title);
 
-    /// Print the contents of the file.
-    void Print(const char *title);
+  /// Get the raw file header structure.
+  ///
+  /// NOTE: this should only be used by routines that operate on the file
+  /// system at a low level.
+  const RawFileHeader *GetRaw() const;
 
-    /// Get the raw file header structure.
-    ///
-    /// NOTE: this should only be used by routines that operate on the file
-    /// system at a low level.
-    const RawFileHeader *GetRaw() const;
+  const IndirectionTable *GetTables() const;
+
+  unsigned GetNumSectors();
+  unsigned GetNumTables();
 
 private:
-    RawFileHeader raw;
+  RawFileHeader raw;
+  IndirectionTable indirectTables[NUM_INDIRECT];
 };
-
 
 #endif

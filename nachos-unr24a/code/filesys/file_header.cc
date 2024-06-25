@@ -22,13 +22,24 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "file_header.hh"
 #include "threads/system.hh"
 
 #include <ctype.h>
 #include <stdio.h>
 
+#include "synch_disk.hh"
+extern SynchDisk *synchDisk;
+
+unsigned FileHeader::GetNumSectors()
+{
+  return DivRoundUp(raw.numBytes, SECTOR_SIZE);
+}
+
+unsigned FileHeader::GetNumTables()
+{
+  return DivRoundUp(GetNumSectors(), NUM_DIRECT);
+}
 
 /// Initialize a fresh file header for a newly created file.  Allocate data
 /// blocks for the file out of the map of free disk blocks.  Return false if
@@ -36,57 +47,88 @@
 ///
 /// * `freeMap` is the bit map of free disk sectors.
 /// * `fileSize` is the bit map of free disk sectors.
-bool
-FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
+bool FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
 {
-    ASSERT(freeMap != nullptr);
+  ASSERT(freeMap != nullptr);
 
-    if (fileSize > MAX_FILE_SIZE) {
-        return false;
-    }
+  if (fileSize > MAX_FILE_SIZE)
+  {
+    return false;
+  }
 
-    raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    if (freeMap->CountClear() < raw.numSectors) {
-        return false;  // Not enough space.
-    }
+  raw.numBytes = fileSize;
+  unsigned numSectors = GetNumSectors();
+  unsigned numTables = GetNumTables();
+  if (freeMap->CountClear() < numSectors + numTables)
+  {
+    return false; // Not enough space.
+  }
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        raw.dataSectors[i] = freeMap->Find();
+  for (unsigned i = 0; i < numTables; i++)
+  {
+    raw.tableSectors[i] = freeMap->Find();
+    unsigned size = numSectors < NUM_DIRECT ? numSectors : NUM_DIRECT;
+
+    for (unsigned j = 0; j < size; j++)
+    {
+      indirectTables[i].dataSectors[j] = freeMap->Find();
     }
-    return true;
+    numSectors -= NUM_DIRECT;
+  }
+
+  // for (unsigned j = 0, indexDirtable = 0; j < numSectors; j++)
+  // {
+  //   unsigned index = DivRoundDown(j, NUM_DIRECT);
+  //   indirectTables[index].dataSectors[indexDirtable++] = freeMap->Find();
+  //   indexDirtable %= NUM_DIRECT;
+  // }
+
+  return true;
 }
 
 /// De-allocate all the space allocated for data blocks for this file.
 ///
 /// * `freeMap` is the bit map of free disk sectors.
-void
-FileHeader::Deallocate(Bitmap *freeMap)
+void FileHeader::Deallocate(Bitmap *freeMap)
 {
-    ASSERT(freeMap != nullptr);
+  ASSERT(freeMap != nullptr);
+  unsigned numSectors = GetNumSectors();
+  unsigned numTables = GetNumTables();
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
-        freeMap->Clear(raw.dataSectors[i]);
+  for (unsigned i = 0; i < numTables; i++)
+  {
+    unsigned size = numSectors < NUM_DIRECT ? numSectors : NUM_DIRECT;
+    for (unsigned j = 0; j < size; j++)
+    {
+      ASSERT(freeMap->Test(indirectTables[i].dataSectors[j])); // ought to be marked!
+      freeMap->Clear(indirectTables[i].dataSectors[j]);
     }
+    ASSERT(freeMap->Test(raw.tableSectors[i]));
+    freeMap->Clear(raw.tableSectors[i]);
+    numSectors -= NUM_DIRECT;
+  }
 }
 
 /// Fetch contents of file header from disk.
 ///
 /// * `sector` is the disk sector containing the file header.
-void
-FileHeader::FetchFrom(unsigned sector)
+void FileHeader::FetchFrom(unsigned sector)
 {
-    synchDisk->ReadSector(sector, (char *) &raw);
+  synchDisk->ReadSector(sector, (char *)&raw);
+  unsigned numTables = GetNumTables();
+  for (unsigned i = 0; i < numTables; i++)
+    synchDisk->ReadSector(raw.tableSectors[i], (char *)&indirectTables[i]);
 }
 
 /// Write the modified contents of the file header back to disk.
 ///
 /// * `sector` is the disk sector to contain the file header.
-void
-FileHeader::WriteBack(unsigned sector)
+void FileHeader::WriteBack(unsigned sector)
 {
-    synchDisk->WriteSector(sector, (char *) &raw);
+  synchDisk->WriteSector(sector, (char *)&raw);
+  unsigned numTables = GetNumTables();
+  for (unsigned i = 0; i < numTables; i++)
+    synchDisk->WriteSector(raw.tableSectors[i], (char *)&indirectTables[i]);
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -98,55 +140,69 @@ FileHeader::WriteBack(unsigned sector)
 unsigned
 FileHeader::ByteToSector(unsigned offset)
 {
-    return raw.dataSectors[offset / SECTOR_SIZE];
+  unsigned sector = DivRoundDown(offset, SECTOR_SIZE);
+  unsigned nTable = DivRoundDown(sector, NUM_DIRECT);
+  unsigned offset2 = offset - (nTable * NUM_DIRECT * SECTOR_SIZE);
+  unsigned index = DivRoundDown(offset2, SECTOR_SIZE);
+
+  return indirectTables[nTable].dataSectors[index];
 }
 
 /// Return the number of bytes in the file.
 unsigned
 FileHeader::FileLength() const
 {
-    return raw.numBytes;
+  return raw.numBytes;
 }
 
 /// Print the contents of the file header, and the contents of all the data
 /// blocks pointed to by the file header.
-void
-FileHeader::Print(const char *title)
+void FileHeader::Print(const char *title)
 {
-    char *data = new char [SECTOR_SIZE];
+  char *data = new char[SECTOR_SIZE];
 
-    if (title == nullptr) {
-        printf("File header:\n");
-    } else {
-        printf("%s file header:\n", title);
-    }
+  if (title == nullptr)
+  {
+    printf("File header:\n");
+  }
+  else
+  {
+    printf("%s file header:\n", title);
+  }
 
-    printf("    size: %u bytes\n"
-           "    block indexes: ",
-           raw.numBytes);
+  printf("    size: %u bytes\n"
+         "    block indexes: ",
+         raw.numBytes);
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        printf("%u ", raw.dataSectors[i]);
+  for (unsigned i = 0; i < GetNumTables(); i++)
+  {
+    printf("%u ", raw.tableSectors[i]);
+  }
+  printf("\n");
+
+  for (unsigned i = 0, k = 0; i < GetNumSectors(); i++)
+  {
+    unsigned sector = ByteToSector(i * SECTOR_SIZE);
+    printf("    contents of block %u:\n", sector);
+    synchDisk->ReadSector(sector, data);
+    for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++)
+    {
+      if (isprint(data[j]))
+      {
+        printf("%c", data[j]);
+      }
+      else
+      {
+        printf("\\%X", (unsigned char)data[j]);
+      }
     }
     printf("\n");
-
-    for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
-        printf("    contents of block %u:\n", raw.dataSectors[i]);
-        synchDisk->ReadSector(raw.dataSectors[i], data);
-        for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
-            if (isprint(data[j])) {
-                printf("%c", data[j]);
-            } else {
-                printf("\\%X", (unsigned char) data[j]);
-            }
-        }
-        printf("\n");
-    }
-    delete [] data;
+  }
+  delete[] data;
 }
 
 const RawFileHeader *
 FileHeader::GetRaw() const
 {
-    return &raw;
+  return &raw;
 }
