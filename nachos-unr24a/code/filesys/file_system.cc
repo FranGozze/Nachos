@@ -216,18 +216,24 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
     }
     else if (!dir->Add(name, sector))
     {
+      DEBUG('f', "No space in directory.\n");
       success = false; // No space in directory.
     }
     else
     {
+      DEBUG('f', "Space in directory.\n");
       FileHeader *h = new FileHeader;
       success = h->Allocate(freeMap->GetBitmap(), initialSize);
+      DEBUG('f', "Allocate.\n");
       // Fails if no space on disk for data.
       if (success)
       {
         // Everything worked, flush all changes back to disk.
+        DEBUG('f', "Fheader write.\n");
         h->WriteBack(sector);
+        DEBUG('f', "Dir write.\n");
         dir->WriteBack(directoryFile);
+        DEBUG('f', "freeMap write.\n");
         freeMap->WriteBack(freeMapFile);
       }
       delete h;
@@ -361,6 +367,45 @@ bool FileSystem::Remove(const char *name)
   else
     return this->Delete(name);
   return true;
+}
+
+bool FileSystem::Extend(unsigned newSize, unsigned id)
+{
+
+  ASSERT(newSize < MAX_FILE_SIZE);
+  FileInfo *finfo;
+  ASSERT((finfo = openFiles->GetFileInfo(id)) != nullptr);
+  SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
+  dir->FetchFrom(directoryFile);
+
+  int sector = dir->Find(finfo->name);
+  if (sector == -1)
+  {
+    delete dir;
+    return false;
+  }
+
+  FileHeader *h = finfo->hdr;
+
+  SynchBitmap *freeMap = new SynchBitmap(NUM_SECTORS, freeMapLock);
+  freeMap->FetchFrom(freeMapFile);
+
+  bool success = h->Extend(newSize, freeMap->GetBitmap());
+  if (success)
+  {
+    h->WriteBack(sector);
+    freeMap->WriteBack(freeMapFile);
+  }
+  else
+  {
+    h->FetchFrom(sector);
+    freeMap->Flush();
+  }
+  dir->Flush();
+
+  delete freeMap;
+  delete dir;
+  return success;
 }
 
 /// List all the files in the file system directory.

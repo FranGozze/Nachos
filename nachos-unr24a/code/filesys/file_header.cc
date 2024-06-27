@@ -206,3 +206,41 @@ FileHeader::GetRaw() const
 {
   return &raw;
 }
+
+bool FileHeader::Extend(unsigned newSize, Bitmap *bitMap)
+{
+  ASSERT(newSize > raw.numBytes);
+  DEBUG('f', "Extending file to %u bytes.\n", newSize);
+  unsigned numSectors = GetNumSectors();
+  unsigned numTables = GetNumTables();
+  unsigned newNumSectors = DivRoundUp(newSize, SECTOR_SIZE);
+  unsigned newNumTables = DivRoundUp(newNumSectors, NUM_DIRECT);
+  unsigned newSectors = newNumSectors - numSectors;
+  unsigned newTables = newNumTables - numTables;
+
+  if (numSectors == newNumSectors)
+  {
+    raw.numBytes = newSize; // no new sectors required
+    return true;
+  }
+
+  if (bitMap->CountClear() < newSectors - numSectors)
+  {
+    return false; // Not enough space.
+  }
+
+  for (unsigned i = numTables; i < newTables; i++)
+  {
+    raw.tableSectors[i] = bitMap->Find();
+    unsigned size = newSectors < NUM_DIRECT ? newSectors : NUM_DIRECT;
+
+    for (unsigned j = 0; j < size; j++)
+    {
+      indirectTables[i].dataSectors[j] = bitMap->Find();
+    }
+    newSectors -= NUM_DIRECT;
+  }
+
+  raw.numBytes = newSize;
+  return true;
+}

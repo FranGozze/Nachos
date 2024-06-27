@@ -172,19 +172,17 @@ int OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
   bool firstAligned, lastAligned;
   char *buf;
 
-  if (position >= fileLength)
+  if (position >= fileLength || position + numBytes > fileLength)
   {
-    if (synchFile)
+    if (position + numBytes > MAX_FILE_SIZE)
+      numBytes = MAX_FILE_SIZE - position;
+    if (!fileSystem->Extend(position + numBytes, id))
     {
-      synchFile->DoneWrite();
+      DEBUG('f', "Error extending file.\n");
+      return 0;
     }
+  }
 
-    return 0; // Check request.
-  }
-  if (position + numBytes > fileLength)
-  {
-    numBytes = fileLength - position;
-  }
   DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
         numBytes, position, fileLength);
 

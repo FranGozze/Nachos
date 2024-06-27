@@ -66,6 +66,8 @@ public:
   unsigned GetNumSectors();
   unsigned GetNumTables();
 
+  bool Extend(unsigned newSize, Bitmap *bitMap);
+
 private:
   RawFileHeader raw;
   IndirectionTable indirectTables[NUM_INDIRECT];

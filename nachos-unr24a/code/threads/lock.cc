@@ -39,8 +39,9 @@ Lock::GetName() const
 
 void Lock::Acquire()
 {
-  DEBUG('l', "%s intenta adquirir el lock\n", currentThread->GetName());
+  DEBUG('l', "%s intenta adquirir el lock: %s\n", currentThread->GetName(), name);
   ASSERT(!IsHeldByCurrentThread());
+
   /*
     Notemos que el cambio de prioridad no se puede hacer en los semaforos dado que los mismos no tiene "Dueño",
     es decir, como tal cualquiera podria utilizar el metodo V(), por lo que no es necesario tener almacenados a los dueños a los que "hayan pasado" por el metodo P(). Por lo tanto, seria imposible localizar a alguno de esto y por lo tanto no se les podria actualizar la prioridad
@@ -59,8 +60,8 @@ void Lock::Acquire()
 
 void Lock::Release()
 {
+  DEBUG('l', "%s intenta liberar el lock: %s\n", currentThread->GetName(), name);
   ASSERT(IsHeldByCurrentThread());
-
   lockOwner->SetOriginalPriority();
   lockOwner = NULL;
   sem->V();
