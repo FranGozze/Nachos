@@ -32,8 +32,7 @@ OpenFile::OpenFile(FileHeader *sharedHdr, SynchFile *synch, unsigned fId)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
-  delete hdr;
-  delete synchFile;
+  fileSystem->Close(id);
 }
 
 /// Change the current location within the open file -- the point at which
