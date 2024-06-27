@@ -375,6 +375,7 @@ bool FileSystem::Extend(unsigned newSize, unsigned id)
   ASSERT(newSize < MAX_FILE_SIZE);
   FileInfo *finfo;
   ASSERT((finfo = openFiles->GetFileInfo(id)) != nullptr);
+
   SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
   dir->FetchFrom(directoryFile);
 

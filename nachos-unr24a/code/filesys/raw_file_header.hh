@@ -7,11 +7,12 @@
 #define NACHOS_FILESYS_RAWFILEHEADER__HH
 
 #include "machine/disk.hh"
-// Pues SECTOR_SIZE = 128, pero en el header tenemos un unsgined (numBytes), por lo que hay que restarlo del tamaño
-static const unsigned NUM_INDIRECT = (SECTOR_SIZE - sizeof(int)) / sizeof(int);
 
-// Pues SECTOR_SIZE = 128
+// Pues usamos todo el sector, y como cada entrada ocupa un entero, esto nos da la cantidad de entradas
 static const unsigned NUM_DIRECT = SECTOR_SIZE / sizeof(int);
+// Pues usamos todo el sector, y como cada entrada ocupa un entero, esto nos da la cantidad de entradas. Como a su vez en el header tenemos una variable que nos dice el tamaño total del archivo
+// debemos restar el espacio que esta ocupa (el cual es equivalente a 1 entrada de la tabla de indirección)
+static const unsigned NUM_INDIRECT = NUM_DIRECT - 1;
 
 const unsigned MAX_FILE_SIZE = NUM_DIRECT * NUM_INDIRECT * SECTOR_SIZE;
 

@@ -347,7 +347,7 @@ void AddressSpace::RemovePage()
     if (machine->GetMMU()->tlb[i].virtualPage == vPage)
     {
       machine->GetMMU()->tlb[i].valid = false;
-      unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
+      // unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
       TranslationEntry *entry = &pageTable[vPage];
       entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
       entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
