@@ -77,7 +77,7 @@ void Directory::WriteBack(OpenFile *file)
 int Directory::FindIndex(const char *name)
 {
   ASSERT(name != nullptr);
-
+  DEBUG('f', "Looking for file %s, tableSize: %d\n", name, raw.tableSize);
   for (unsigned i = 0; i < raw.tableSize; i++)
   {
     if (raw.table[i].inUse && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN))
@@ -135,7 +135,7 @@ bool Directory::Add(const char *name, int newSector)
   raw.table = (DirectoryEntry *)realloc(raw.table,
                                         ++raw.tableSize * sizeof(DirectoryEntry));
   raw.table[raw.tableSize - 1].inUse = false;
-
+  DEBUG('f', "Directory expanded to %d entries.\n", raw.tableSize);
   return Add(name, newSector);
 
   // return false;  // no space.  Fix when we have extensible files.

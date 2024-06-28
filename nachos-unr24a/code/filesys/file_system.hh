@@ -92,6 +92,7 @@ public:
 #include "directory_entry.hh"
 #include "machine/disk.hh"
 #include "openFilesTable.hh"
+#include "directoryTable.hh"
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
@@ -141,12 +142,13 @@ public:
 private:
   OpenFile *freeMapFile;   ///< Bit map of free disk blocks, represented as a
                            ///< file.
-  OpenFile *directoryFile; ///< “Root” directory -- list of file names,
+  OpenFile *rootDirectory; ///< “Root” directory -- list of file names,
                            ///< represented as a file.
   Lock *freeMapLock;       ///< Lock protecting the free map.
-  Lock *directoryLock;     ///< Lock protecting the directory.
+  // Lock *directoryLock;     ///< Lock protecting the directory.
 
-  OpenFilesTable *openFiles; ///< Table of open files.
+  DirectoryTable *directoryTable; ///< Table of directories.
+  OpenFilesTable *openFiles;      ///< Table of open files.
 };
 
 #endif

@@ -4,6 +4,7 @@ SynchDirectory::SynchDirectory(unsigned size, Lock *l)
 {
   lock = l;
   directory = new Directory(size);
+  loop = 0;
 }
 SynchDirectory::~SynchDirectory()
 {
@@ -11,13 +12,17 @@ SynchDirectory::~SynchDirectory()
 }
 void SynchDirectory::FetchFrom(OpenFile *file)
 {
-  lock->Acquire();
+  if (!lock->IsHeldByCurrentThread())
+    lock->Acquire();
+  loop++;
   directory->FetchFrom(file);
 }
 void SynchDirectory::WriteBack(OpenFile *file)
 {
   directory->WriteBack(file);
-  lock->Release();
+  loop--;
+  if (loop == 0)
+    lock->Release();
 }
 int SynchDirectory::Find(const char *name)
 {
@@ -47,10 +52,14 @@ const RawDirectory *SynchDirectory::GetRaw() const
 
 void SynchDirectory::Request()
 {
-  lock->Acquire();
+  if (!lock->IsHeldByCurrentThread())
+    lock->Acquire();
+  loop++;
 }
 
 void SynchDirectory::Flush()
 {
-  lock->Release();
+  loop--;
+  if (loop == 0)
+    lock->Release();
 }

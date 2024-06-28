@@ -23,6 +23,7 @@ public:
 private:
   Directory *directory;
   Lock *lock;
+  unsigned loop;
 };
 
 #endif

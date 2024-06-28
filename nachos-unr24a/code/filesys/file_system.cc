@@ -74,9 +74,9 @@ static const unsigned DIRECTORY_SECTOR = 1;
 FileSystem::FileSystem(bool format)
 {
   DEBUG('f', "Initializing the file system.\n");
-
+  directoryTable = new DirectoryTable();
   freeMapLock = new Lock("Freemap lock");
-  directoryLock = new Lock("Directory lock");
+  // directoryLock = new Lock("Directory lock");
 
   SynchFile *synchFreeMap = nullptr;
   FileHeader *mapH = new FileHeader;
@@ -87,7 +87,8 @@ FileSystem::FileSystem(bool format)
   if (format)
   {
     SynchBitmap *freeMap = new SynchBitmap(NUM_SECTORS, freeMapLock);
-    SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
+
+    // SynchDirectory *dir = new SynchDirectory(NUM_DIR_ENTRIES, directoryLock);
 
     DEBUG('f', "Formatting the file system.\n");
 
@@ -118,7 +119,7 @@ FileSystem::FileSystem(bool format)
     // while Nachos is running.
 
     freeMapFile = new OpenFile(mapH, synchFreeMap, 0);
-    directoryFile = new OpenFile(dirH, synchDirectory, 1);
+    rootDirectory = new OpenFile(dirH, synchDirectory, 1);
 
     // Once we have the files “open”, we can write the initial version of
     // each file back to disk.  The directory at this point is completely
@@ -130,7 +131,7 @@ FileSystem::FileSystem(bool format)
     freeMap->Request();
     freeMap->WriteBack(freeMapFile); // flush changes to disk
     dir->Request();
-    dir->WriteBack(directoryFile);
+    dir->WriteBack(rootDirectory);
 
     if (debug.IsEnabled('f'))
     {
@@ -149,8 +150,8 @@ FileSystem::FileSystem(bool format)
     mapH->FetchFrom(FREE_MAP_SECTOR);
     freeMapFile = new OpenFile(mapH, synchFreeMap, 0);
     dirH->FetchFrom(DIRECTORY_SECTOR);
-    directoryFile = new OpenFile(dirH, synchDirectory, 1);
-  }
+    rootDirectory = new OpenFile(dirH, synchDirectory, 1);
+    }
 
   openFiles = new OpenFilesTable();
   openFiles->AddFile(nullptr, mapH, synchFreeMap);
@@ -272,7 +273,9 @@ FileSystem::Open(const char *name)
       hdr->FetchFrom(sector);
 
       SynchFile *synchFile = new SynchFile;
+      DEBUG('f', "File %s opened\n", name);
       fid = openFiles->AddFile(name, hdr, synchFile);
+      DEBUG('f', "File %s opened with fid %d\n", name, fid);
       if (fid != -1)
         openFile = new OpenFile(hdr, synchFile, fid); // `name` was found in directory.
       else
@@ -281,6 +284,7 @@ FileSystem::Open(const char *name)
         delete synchFile;
       }
     }
+    DEBUG('f', "File %s in sector %d\n", name, sector);
     dir->Flush();
     delete dir;
   }
@@ -291,6 +295,7 @@ FileSystem::Open(const char *name)
     if (finfo->available)
     {
       finfo->nThreads++;
+      DEBUG('f', "File %s opened with fid %d\n", name, fid);
       openFile = new OpenFile(finfo->hdr, finfo->synchFile, fid);
     }
   }
