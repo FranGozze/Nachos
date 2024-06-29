@@ -14,16 +14,16 @@ SynchDirectory::~SynchDirectory()
 }
 void SynchDirectory::FetchFrom(OpenFile *file)
 {
-  DEBUG('f', "Fetching directory from file PreIsHeld\n");
-  if (!lock)
-    DEBUG('f', "Lock is null\n");
+  // DEBUG('f', "Fetching directory from file PreIsHeld\n");
+  // if (!lock)
+  //   DEBUG('f', "Lock is null\n");
 
   if (!lock->IsHeldByCurrentThread())
   {
-    DEBUG('f', "Fetching directory from file PreAcq\n");
+    // DEBUG('f', "Fetching directory from file PreAcq\n");
     lock->Acquire();
   }
-  DEBUG('f', "Fetching directory from file, its held\n");
+  // DEBUG('f', "Fetching directory from file, its held\n");
   loop++;
   directory->FetchFrom(file);
 }

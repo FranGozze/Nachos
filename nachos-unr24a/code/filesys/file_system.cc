@@ -218,7 +218,7 @@ bool FileSystem::CreateFileDirectory(const char *name, unsigned initialSize, boo
   char path[strlen(name) + 1];
   const char *fName = sepPath(name, path);
   // the file is in this directory
-  DEBUG('e', "Creating file %s, path %s, isDir: %d\n", fName, path, isDir);
+  DEBUG('f', "Creating file %s, path %s, isDir: %d\n", fName, path, isDir);
   if (strcmp(path, "") == 0)
   {
     return CreateAtomic(fName, initialSize, isDir);
@@ -231,7 +231,7 @@ bool FileSystem::CreateFileDirectory(const char *name, unsigned initialSize, boo
       // delete actual;
       return false;
     }
-
+    DEBUG('f', "Pre second if\n");
     if (CreateAtomic(fName, initialSize, isDir))
     {
       currentThread->SetCurrentDirectory(actual);
@@ -245,10 +245,13 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
   ASSERT(name != nullptr);
 
   OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
-  DEBUG('f', "1\n");
   DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
   if (dInfo == nullptr)
-    DEBUG('f', "dInfo is null, id: %d\n", actualDirectory->GetId());
+  {
+    FileInfo *aux = openFiles->GetFileInfo(actualDirectory->GetId());
+    DEBUG('f', "'CreateAtomic'dInfo is null, fileId: %d, name: \n", actualDirectory->GetId(), aux->name);
+    return false;
+  }
   else
   {
     DEBUG('f', "'CreateAtomic' dInfo size: %d, file: %p , dir: %p\n", dInfo->size, dInfo->file, dInfo->synchDir);
@@ -283,7 +286,7 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
     }
     else
     {
-      dir->Add(name, sector, isDir);
+      // dir->Add(name, sector, isDir);
       DEBUG('f', "Space in directory.\n");
       FileHeader *h = new FileHeader;
       success = h->Allocate(freeMap->GetBitmap(), initialSize);
@@ -299,17 +302,18 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
         if (isDir)
         {
           SynchFile *newFile = new SynchFile();
-          OpenFile *newDir = new OpenFile(h, newFile, openFiles->AddFile(name, h, newFile));
-          directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
+          int fid = openFiles->AddFile(name, h, newFile);
+          DEBUG('f', "Directory fileId: %d, name: %s\n", fid, openFiles->GetFileInfo(actualDirectory->GetId())->name);
+          OpenFile *newDir = new OpenFile(h, newFile, fid);
+          unsigned did = directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
+          DEBUG('f', "Directory id: %d, name: %s\n", did, name);
         }
-        else
-        {
-          dir->WriteBack(actualDirectory);
-        }
+        DEBUG('f', "actualDir write.\n");
+        dir->WriteBack(actualDirectory);
         DEBUG('f', "freeMap write.\n");
         freeMap->WriteBack(freeMapFile);
       }
-      delete h;
+      // delete h;
     }
     delete freeMap;
   }
@@ -323,9 +327,9 @@ bool FileSystem::Create(const char *name, unsigned initialSize)
 {
   return CreateFileDirectory(name, initialSize, false);
 }
-bool FileSystem::CreateDirectory(const char *name, unsigned initialSize)
+bool FileSystem::CreateDirectory(const char *name)
 {
-  return CreateFileDirectory(name, initialSize, true);
+  return CreateFileDirectory(name, DIRECTORY_FILE_SIZE, true);
 }
 
 /// Open a file for reading and writing.
@@ -346,7 +350,7 @@ FileSystem::Open(const char *name)
     OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
     DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
     if (dInfo == nullptr)
-      DEBUG('f', "dInfo is null, id: %d\n", actualDirectory->GetId());
+      DEBUG('f', "'open' dInfo is null, id: %d\n", actualDirectory->GetId());
     else
     {
       DEBUG('f', "'Open' dInfo size: %d, file: %p , dir: %p\n", dInfo->size, dInfo->file, dInfo->synchDir);
@@ -483,6 +487,7 @@ bool FileSystem::Extend(unsigned newSize, unsigned id)
   int sector = dir->Find(finfo->name);
   if (sector == -1)
   {
+    DEBUG('f', "File not found, name: %s.\n", finfo->name);
     // delete dir;
     return false;
   }
@@ -516,10 +521,11 @@ void FileSystem::List()
   OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
   DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
   SynchDirectory *dir = dInfo->synchDir;
-
+  DEBUG('f', "Listing directory %s.\n", dInfo->name);
   dir->FetchFrom(dInfo->file);
   dir->List();
   dir->Flush();
+
   // delete dir;
 }
 
@@ -736,7 +742,7 @@ void FileSystem::Print()
   freeMap->Print();
 
   printf("--------------------------------\n");
-  dir->FetchFrom(rootDirectory);
+  dir->FetchFrom(dInfo->file);
   dir->Print();
   printf("--------------------------------\n");
 
@@ -751,6 +757,7 @@ bool FileSystem::Check() { return false; }
 OpenFile *FileSystem::OpenDir(const char *name)
 {
   ASSERT(name);
+
   OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
   DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
   SynchDirectory *dir = dInfo->synchDir;
@@ -758,7 +765,9 @@ OpenFile *FileSystem::OpenDir(const char *name)
   dir->FetchFrom(actualDirectory);
   int sector = dir->Find(name);
   dir->Flush();
-
+  DEBUG('f', "Opening directory %s in sector %d, dir: %s\n", name, sector, dInfo->name);
+  if (sector < 0)
+    dir->List();
   bool isDir = true;
   if (sector >= 0)
   {
@@ -774,6 +783,13 @@ OpenFile *FileSystem::OpenDir(const char *name)
   if (sector >= 0)
   {
     DEBUG('f', "Opening directory %s\n", name);
+    unsigned did;
+    if ((did = directoryTable->Find(name)) != -1)
+    {
+      DirectoryInfo *dinfo = directoryTable->GetDirectoryInfo(did);
+      return dinfo->file;
+    }
+
     FileHeader *hdr = new FileHeader;
     hdr->FetchFrom(sector);
 
@@ -781,17 +797,20 @@ OpenFile *FileSystem::OpenDir(const char *name)
     unsigned fid;
     if ((fid = openFiles->Find(name)) != -1)
     {
+      DEBUG('f', "1\n");
       FileInfo *finfo = openFiles->GetFileInfo(fid);
       finfo->nThreads++;
       synchFile = finfo->synchFile;
     }
     else
     {
+      DEBUG('f', "2\n");
       synchFile = new SynchFile;
       fid = openFiles->AddFile(name, hdr, synchFile);
     }
     newDir = new OpenFile(hdr, synchFile, fid);
-    if (directoryTable->Find(name) == -1)
+    DEBUG('z', "%p\n", newDir);
+    if (did == -1)
       directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
   }
   return newDir;
@@ -815,45 +834,35 @@ bool FileSystem::changeDirectory(const char *name)
     if (name[0] == '\0')
     {
       DEBUG('f', "Changed to root directory.\n");
-      delete temp;
+      // delete temp;
       return true;
     }
   }
 
   char path[strlen(name) + 1];
   const char *rest = getFilePath(name, path);
+  DEBUG('f', "Path \"%s\".\n", path);
   OpenFile *newDir = OpenDir(path);
-
   bool result = newDir != nullptr;
   while (strcmp(rest, "") != 0 && result)
   {
     DEBUG('f', "Changing directory to \"%s\".\n", rest);
     rest = getFilePath(rest, path);
-
-    OpenFile *before = currentThread->GetCurrentDirectory();
-    if (before != rootDirectory && before != temp)
-      delete before;
-
     currentThread->SetCurrentDirectory(newDir);
+    DEBUG('f', "Path \"%s\".\n", path);
     newDir = OpenDir(path);
     result = newDir != nullptr;
   }
 
-  OpenFile *before = currentThread->GetCurrentDirectory();
-  if (before != rootDirectory && before != temp)
-    delete before;
-
   if (result)
   {
     currentThread->SetCurrentDirectory(newDir);
-    DEBUG('f', "Changed directory to \"%s\".\n", name);
-    if (temp != rootDirectory)
-      delete temp;
+    DEBUG('e', "Changed directory to \"%s\".\n", name);
   }
   else
   {
     currentThread->SetCurrentDirectory(temp);
-    DEBUG('f', "Could not change directory to \"%s\".\n", name);
+    DEBUG('e', "Could not change directory to \"%s\".\n", name);
   }
   return result;
 }

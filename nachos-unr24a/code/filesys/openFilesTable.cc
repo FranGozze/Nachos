@@ -28,6 +28,7 @@ int OpenFilesTable::AddFile(const char *name, FileHeader *hdr, SynchFile *synch)
 
   if ((id = table->Add(info)) == -1)
     delete info;
+  DEBUG('f', "'OpenFilesTable::AddFile'name: %s,  id file: %d\n", info->name, id);
 
   return id;
 }

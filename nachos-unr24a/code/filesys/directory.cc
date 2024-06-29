@@ -179,7 +179,11 @@ void Directory::List() const
   {
     if (raw.table[i].inUse)
     {
-      printf("%s\n", raw.table[i].name);
+      printf("%s", raw.table[i].name);
+      if (raw.table[i].isDir)
+        printf("/ \n");
+      else
+        printf("\n");
     }
   }
 }

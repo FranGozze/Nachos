@@ -369,7 +369,7 @@ SyscallHandler(ExceptionType _et)
   {
     char dirName[FILE_NAME_MAX_LEN + 1];
     getFileName(dirName);
-    if (fileSystem->CreateDirectory(dirName, 100))
+    if (fileSystem->CreateDirectory(dirName))
     {
       DEBUG('e', "Succesfully created a new directory with name %s \n", dirName);
       machine->WriteRegister(2, 0);

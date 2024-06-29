@@ -38,7 +38,7 @@ int DirectoryTable::AddDirectory(const char *name, OpenFile *file, unsigned curr
 
   if ((id = table->Add(info)) == -1)
     delete info;
-  DEBUG('f', "id directory: %d\n", id);
+  DEBUG('f', "'DirectoryTable::AddDirectory'name: %s,  id directory: %d\n", info->name, id);
   return id;
 }
 void DirectoryTable::RemoveDirectory(int id)
@@ -67,8 +67,12 @@ DirectoryInfo *DirectoryTable::GetDirectoryInfo2(OpenFile *file)
 {
   for (unsigned i = 0; i < table->SIZE; i++)
   {
+    DEBUG('z', "Comparing %p with %p\n", table->Get(i)->file, file);
     if (table->HasKey(i) && table->Get(i)->file == file)
+    {
+      DEBUG('z', "equal %d\n", i);
       return table->Get(i);
+    }
   }
   return nullptr;
 }

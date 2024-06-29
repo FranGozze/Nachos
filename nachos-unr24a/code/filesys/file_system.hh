@@ -117,7 +117,7 @@ public:
 
   /// Create a file (UNIX `creat`).
   bool Create(const char *name, unsigned initialSize);
-  bool CreateDirectory(const char *name, unsigned initialSize);
+  bool CreateDirectory(const char *name);
   bool CreateFileDirectory(const char *name, unsigned initialSize, bool isDir);
 
   bool CreateAtomic(const char *name, unsigned initialSize, bool isDir);

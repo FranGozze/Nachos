@@ -15,10 +15,10 @@ int main(void)
   char buf[12], buf2[900];
   Mkdir("testDir");
   Cd("testDir");
-  // Create("test.txt");
-  // int o = Open("test.txt");
+  Create("test.txt");
+  int o = Open("test.txt");
   // Write("Hello world\n", 12, CONSOLE_OUTPUT);
-  // Write("Hello world\n", 12, o);
+  Write("Hello world\n", 12, o);
   // Close(o);
   Ls();
 
