@@ -11,7 +11,7 @@ public:
   void FetchFrom(OpenFile *file);
   void WriteBack(OpenFile *file);
   int Find(const char *name);
-  bool Add(const char *name, int newSector);
+  bool Add(const char *name, int newSector, bool isDir);
   bool Remove(const char *name);
   void List() const;
   void Print() const;

@@ -197,7 +197,13 @@ SyscallHandler(ExceptionType _et)
   {
     OpenFileId fid = machine->ReadRegister(4) - 2;
     OpenFile *file = currentThread->fileDescriptors->Get(fid);
+
+#ifndef FILESYS_STUB
+    fileSystem->Close(file->GetId());
+#else
     delete file;
+#endif
+
     currentThread->fileDescriptors->Remove(fid);
     break;
   }
@@ -332,6 +338,51 @@ SyscallHandler(ExceptionType _et)
 
     break;
   }
+#ifndef FILESYS_STUB
+  case SC_CD:
+  {
+    char dirName[FILE_NAME_MAX_LEN + 1];
+    getFileName(dirName);
+    DEBUG('e', "Changing dir to %s\n", dirName);
+    bool success = fileSystem->changeDirectory(dirName);
+    if (success)
+    {
+      DEBUG('e', "Dir changed\n");
+      machine->WriteRegister(2, 0);
+    }
+    else
+    {
+      DEBUG('e', "Dir not found\n");
+      machine->WriteRegister(2, -1);
+    }
+
+    break;
+  }
+  case SC_LS:
+  {
+    DEBUG('e', " Listed directory\n");
+    fileSystem->List();
+    machine->WriteRegister(2, 0);
+    break;
+  }
+  case SC_MKDIR:
+  {
+    char dirName[FILE_NAME_MAX_LEN + 1];
+    getFileName(dirName);
+    if (fileSystem->CreateDirectory(dirName, 100))
+    {
+      DEBUG('e', "Succesfully created a new directory with name %s \n", dirName);
+      machine->WriteRegister(2, 0);
+    }
+    else
+    {
+      DEBUG('e', "Error when creating a new directory with name %s \n", dirName);
+      machine->WriteRegister(2, -1);
+    }
+
+    break;
+  }
+#endif
   default:
     fprintf(stderr, "Unexpected system call: id %d.\n", scid);
     ASSERT(false);

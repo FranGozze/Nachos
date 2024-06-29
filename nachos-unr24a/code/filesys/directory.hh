@@ -46,7 +46,7 @@ public:
   int Find(const char *name);
 
   /// Add a file name into the directory.
-  bool Add(const char *name, int newSector);
+  bool Add(const char *name, int newSector, bool isDir);
 
   /// Remove a file from the directory.
   bool Remove(const char *name);

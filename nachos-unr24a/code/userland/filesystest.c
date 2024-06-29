@@ -12,22 +12,16 @@
 
 int main(void)
 {
-  char buf[12], buf2[900];
-  Mkdir("testDir");
-  Cd("testDir");
-  // Create("test.txt");
-  // int o = Open("test.txt");
-  // Write("Hello world\n", 12, CONSOLE_OUTPUT);
-  // Write("Hello world\n", 12, o);
-  // Close(o);
-  Ls();
 
-  // int o = Open("test.txt");
-  // Write("Hello world\n", 12, CONSOLE_OUTPUT);
-  // char buf[12], buf2[900];
-  // Read(buf2, 900, o);
-  // Write(buf2, 900, CONSOLE_OUTPUT);
-  // Close(o);
+  char buf[12], buf2[900];
+  // Mkdir("testDir");
+  // Cd("testDir");
+  Create("test.txt");
+  int o = Open("test.txt");
+  Write("Hello world\n", 12, CONSOLE_OUTPUT);
+  Write("Hello world\n", 12, o);
+  Close(o);
+  // Ls();
 
   return 0;
 }

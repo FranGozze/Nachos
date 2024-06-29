@@ -218,6 +218,7 @@ bool FileSystem::CreateFileDirectory(const char *name, unsigned initialSize, boo
   char path[strlen(name) + 1];
   const char *fName = sepPath(name, path);
   // the file is in this directory
+  DEBUG('e', "Creating file %s, path %s, isDir: %d\n", fName, path, isDir);
   if (strcmp(path, "") == 0)
   {
     return CreateAtomic(fName, initialSize, isDir);
@@ -275,14 +276,14 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
     {
       success = false; // No free block for file header.
     }
-    else if (!dir->Add(name, sector))
+    else if (!dir->Add(name, sector, isDir))
     {
       DEBUG('f', "No space in directory.\n");
       success = false; // No space in directory.
     }
     else
     {
-      dir->Add(name, isDir);
+      dir->Add(name, sector, isDir);
       DEBUG('f', "Space in directory.\n");
       FileHeader *h = new FileHeader;
       success = h->Allocate(freeMap->GetBitmap(), initialSize);
@@ -519,7 +520,7 @@ void FileSystem::List()
   dir->FetchFrom(dInfo->file);
   dir->List();
   dir->Flush();
-  delete dir;
+  // delete dir;
 }
 
 static bool
@@ -742,7 +743,7 @@ void FileSystem::Print()
   delete bitH;
   delete dirH;
   delete freeMap;
-  delete dir;
+  // delete dir;
 }
 
 bool FileSystem::Check() { return false; }
@@ -765,10 +766,10 @@ OpenFile *FileSystem::OpenDir(const char *name)
   }
   if (!isDir)
   {
-    DEBUG('f', "Tried to open file %s as a directory\n", name);
+    DEBUG('e', "Tried to open file %s as a directory\n", name);
     return nullptr;
   }
-  delete dir;
+
   OpenFile *newDir = nullptr;
   if (sector >= 0)
   {
@@ -790,7 +791,8 @@ OpenFile *FileSystem::OpenDir(const char *name)
       fid = openFiles->AddFile(name, hdr, synchFile);
     }
     newDir = new OpenFile(hdr, synchFile, fid);
-    directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
+    if (directoryTable->Find(name) == -1)
+      directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
   }
   return newDir;
 }

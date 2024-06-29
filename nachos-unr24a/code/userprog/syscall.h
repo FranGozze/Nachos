@@ -34,6 +34,10 @@
 #define SC_READ 14
 #define SC_WRITE 15
 
+#define SC_CD 16
+#define SC_LS 17
+#define SC_MKDIR 18
+
 #ifndef IN_ASM
 
 /// The system call interface.  These are the operations the Nachos kernel
@@ -122,6 +126,12 @@ int Read(char *buffer, int size, OpenFileId id);
 
 /// Close the file, we are done reading and writing to it.
 int Close(OpenFileId id);
+
+int Cd(const char *name);
+
+int Ls();
+
+int Mkdir(const char *name);
 
 #endif
 

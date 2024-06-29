@@ -124,7 +124,7 @@ int Directory::Find(const char *name)
 ///
 /// * `name` is the name of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
-bool Directory::Add(const char *name, int newSector)
+bool Directory::Add(const char *name, int newSector, bool isDir)
 {
   ASSERT(name != nullptr);
 
@@ -140,6 +140,7 @@ bool Directory::Add(const char *name, int newSector)
       raw.table[i].inUse = true;
       strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
       raw.table[i].sector = newSector;
+      raw.table[i].isDir = isDir;
       return true;
     }
   }
@@ -149,7 +150,7 @@ bool Directory::Add(const char *name, int newSector)
                                         ++raw.tableSize * sizeof(DirectoryEntry));
   raw.table[raw.tableSize - 1].inUse = false;
   DEBUG('f', "Directory expanded to %d entries.\n", raw.tableSize);
-  return Add(name, newSector);
+  return Add(name, newSector, isDir);
 
   // return false;  // no space.  Fix when we have extensible files.
 }

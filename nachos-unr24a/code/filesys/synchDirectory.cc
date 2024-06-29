@@ -38,9 +38,9 @@ int SynchDirectory::Find(const char *name)
 {
   return directory->Find(name);
 }
-bool SynchDirectory::Add(const char *name, int newSector)
+bool SynchDirectory::Add(const char *name, int newSector, bool isDir)
 {
-  return directory->Add(name, newSector);
+  return directory->Add(name, newSector, isDir);
 }
 bool SynchDirectory::Remove(const char *name)
 {
