@@ -20,7 +20,7 @@
 #define NACHOS_FILESYS_OPENFILE__HH
 
 #include "lib/utility.hh"
-#include "filesys/synchFile.hh"
+
 #ifdef FILESYS_STUB // Temporarily implement calls to Nachos file system as
                     // calls to UNIX!  See definitions listed under `#else`.
 class OpenFile
@@ -84,7 +84,7 @@ private:
 
 #else // FILESYS
 class FileHeader;
-
+class SynchFile;
 class OpenFile
 {
 public:
@@ -111,6 +111,11 @@ public:
   // Return the number of bytes in the file (this interface is simpler than
   // the UNIX idiom -- `lseek` to end of file, `tell`, `lseek` back).
   unsigned Length() const;
+
+  unsigned GetId() const { return id; }
+
+  FileHeader *GetHdr() const { return hdr; }
+  SynchFile *GetSynch() const { return synchFile; }
 
 private:
   FileHeader *hdr;       ///< Header for this file.

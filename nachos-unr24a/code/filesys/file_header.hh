@@ -66,6 +66,8 @@ public:
   unsigned GetNumSectors();
   unsigned GetNumTables();
 
+  unsigned GetInitSector();
+
   bool Extend(unsigned newSize, Bitmap *bitMap);
 
 private:

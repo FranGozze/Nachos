@@ -1,11 +1,9 @@
 #ifndef NACHOS_FILESYS_DIRECTORYTABLE__HH
 #define NACHOS_FILESYS_DIRECTORYTABLE__HH
 #include "lib/table.hh"
-#include "file_header.hh"
-#include "synchDirectory.hh"
-
-/// For simplicity, we assume file names are <= 9 characters long.
-const unsigned FILE_NAME_MAX_LEN = 9;
+#include "directory_entry.hh"
+class SynchDirectory;
+class OpenFile;
 
 struct DirectoryInfo
 {
@@ -14,6 +12,8 @@ struct DirectoryInfo
   char path[FILE_NAME_MAX_LEN * 5 + 1];
   unsigned size;
   SynchDirectory *synchDir;
+  OpenFile *file;
+
   // False if the file was deleted and cannot be opened anymore, true otherwise
   bool available;
   // Number of threads currently accesing this file
@@ -26,12 +26,13 @@ public:
   DirectoryTable();
   ~DirectoryTable();
 
-  int AddDirectory(const char *name);
+  int AddDirectory(const char *name, OpenFile *file, unsigned currentSector, unsigned parentSector);
   void RemoveDirectory(int id);
 
   int Find(const char *name);
 
   DirectoryInfo *GetDirectoryInfo(int id);
+  DirectoryInfo *GetDirectoryInfo2(OpenFile *file);
 
 private:
   Table<DirectoryInfo *> *table;

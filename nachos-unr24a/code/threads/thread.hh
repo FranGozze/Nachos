@@ -45,9 +45,10 @@
 #include "userprog/address_space.hh"
 #endif
 #include "lib/table.hh"
-#include "filesys/open_file.hh"
+
 #include <stdint.h>
 class Channel;
+class OpenFile;
 
 /// CPU register state to be saved on context switch.
 ///
@@ -176,6 +177,15 @@ public:
   AddressSpace *space;
 
   int pid;
+#ifndef FILESYS_STUB
+  // Current directory of this thread
+private:
+  OpenFile *currentDirectory;
+
+public:
+  OpenFile *GetCurrentDirectory();
+  void SetCurrentDirectory(OpenFile *directory);
+#endif
 #endif
 };
 

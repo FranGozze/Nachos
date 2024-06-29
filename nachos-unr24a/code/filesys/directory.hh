@@ -14,10 +14,9 @@
 #ifndef NACHOS_FILESYS_DIRECTORY__HH
 #define NACHOS_FILESYS_DIRECTORY__HH
 
-
 #include "raw_directory.hh"
-#include "open_file.hh"
 
+class OpenFile;
 
 /// The following class defines a UNIX-like “directory”.  Each entry in the
 /// directory describes a file, and where to find it on disk.
@@ -28,49 +27,48 @@
 /// The constructor initializes a directory structure in memory; the
 /// `FetchFrom`/`WriteBack` operations shuffle the directory information
 /// from/to disk.
-class Directory {
+class Directory
+{
 public:
+  /// Initialize an empty directory with space for `size` files.
+  Directory(unsigned size, unsigned currentSector, unsigned parentSector);
 
-    /// Initialize an empty directory with space for `size` files.
-    Directory(unsigned size);
+  /// De-allocate the directory.
+  ~Directory();
 
-    /// De-allocate the directory.
-    ~Directory();
+  /// Initialize directory contents from disk.
+  void FetchFrom(OpenFile *file);
 
-    /// Initialize directory contents from disk.
-    void FetchFrom(OpenFile *file);
+  /// Write modifications to directory contents back to disk.
+  void WriteBack(OpenFile *file);
 
-    /// Write modifications to directory contents back to disk.
-    void WriteBack(OpenFile *file);
+  /// Find the sector number of the `FileHeader` for file: `name`.
+  int Find(const char *name);
 
-    /// Find the sector number of the `FileHeader` for file: `name`.
-    int Find(const char *name);
+  /// Add a file name into the directory.
+  bool Add(const char *name, int newSector);
 
-    /// Add a file name into the directory.
-    bool Add(const char *name, int newSector);
+  /// Remove a file from the directory.
+  bool Remove(const char *name);
 
-    /// Remove a file from the directory.
-    bool Remove(const char *name);
+  /// Print the names of all the files in the directory.
+  void List() const;
 
-    /// Print the names of all the files in the directory.
-    void List() const;
+  /// Verbose print of the contents of the directory -- all the file names
+  /// and their contents.
+  void Print() const;
 
-    /// Verbose print of the contents of the directory -- all the file names
-    /// and their contents.
-    void Print() const;
-
-    /// Get the raw directory structure.
-    ///
-    /// NOTE: this should only be used by routines that operating on the file
-    /// system at a low level.
-    const RawDirectory *GetRaw() const;
+  /// Get the raw directory structure.
+  ///
+  /// NOTE: this should only be used by routines that operating on the file
+  /// system at a low level.
+  const RawDirectory *GetRaw() const;
+  bool IsDir(const char *name);
 
 private:
-    /// Find the index into the directory table corresponding to `name`.
-    int FindIndex(const char *name);
-
-    RawDirectory raw;
+  /// Find the index into the directory table corresponding to `name`.
+  int FindIndex(const char *name);
+  RawDirectory raw;
 };
-
 
 #endif

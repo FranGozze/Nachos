@@ -1,5 +1,6 @@
 #ifndef NACHOS_FILESYS_SYNCHFILE__HH
 #define NACHOS_FILESYS_SYNCHFILE__HH
+
 class Condition;
 class Lock;
 class Thread;

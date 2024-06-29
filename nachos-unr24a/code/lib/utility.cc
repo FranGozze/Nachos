@@ -7,6 +7,22 @@
 
 Debug debug;
 
+const char *getFilePath(const char *str, char *substr)
+{
+  while (*str != '/' && *str != '\0')
+  {
+    *substr = *str;
+    str++;
+    substr++;
+  }
+  *substr = '\0';
+
+  if (*str == '/')
+    return str + 1;
+  else
+    return str;
+}
+
 const char *sepPath(const char *str, char *path)
 {
   int lastbar = -1;

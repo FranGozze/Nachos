@@ -35,7 +35,9 @@
 #ifndef NACHOS_FILESYS_FILESYSTEM__HH
 #define NACHOS_FILESYS_FILESYSTEM__HH
 
-#include "open_file.hh"
+#include "directory.hh"
+#include "lib/bitmap.hh"
+#include "file_header.hh"
 
 #ifdef FILESYS_STUB // Temporarily implement file system calls as calls to
                     // UNIX, until the real file system implementation is
@@ -90,9 +92,6 @@ public:
 #else // FILESYS
 
 #include "directory_entry.hh"
-#include "machine/disk.hh"
-#include "openFilesTable.hh"
-#include "directoryTable.hh"
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
@@ -102,6 +101,8 @@ static const unsigned NUM_DIR_ENTRIES = 10;
 static const unsigned DIRECTORY_FILE_SIZE = sizeof(DirectoryEntry) * NUM_DIR_ENTRIES;
 
 class Lock;
+class DirectoryTable;
+class OpenFilesTable;
 class FileSystem
 {
 public:
@@ -116,6 +117,10 @@ public:
 
   /// Create a file (UNIX `creat`).
   bool Create(const char *name, unsigned initialSize);
+  bool CreateDirectory(const char *name, unsigned initialSize);
+  bool CreateFileDirectory(const char *name, unsigned initialSize, bool isDir);
+
+  bool CreateAtomic(const char *name, unsigned initialSize, bool isDir);
 
   /// Open a file (UNIX `open`).
   OpenFile *Open(const char *name);
@@ -138,13 +143,15 @@ public:
 
   /// Extend the size of a file.
   bool Extend(unsigned newSize, unsigned id);
+  bool changeDirectory(const char *name);
+  OpenFile *OpenDir(const char *name);
 
-private:
-  OpenFile *freeMapFile;   ///< Bit map of free disk blocks, represented as a
-                           ///< file.
   OpenFile *rootDirectory; ///< “Root” directory -- list of file names,
-                           ///< represented as a file.
-  Lock *freeMapLock;       ///< Lock protecting the free map.
+private:
+  OpenFile *freeMapFile; ///< Bit map of free disk blocks, represented as a
+                         ///< file.
+                         ///< represented as a file.
+  Lock *freeMapLock;     ///< Lock protecting the free map.
   // Lock *directoryLock;     ///< Lock protecting the directory.
 
   DirectoryTable *directoryTable; ///< Table of directories.

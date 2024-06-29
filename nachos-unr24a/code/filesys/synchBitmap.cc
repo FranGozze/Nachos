@@ -1,7 +1,5 @@
 #include "synchBitmap.hh"
 #include "threads/lock.hh"
-#include "lib/bitmap.hh"
-
 SynchBitmap::SynchBitmap(unsigned nitems, Lock *l)
 {
   lock = l;

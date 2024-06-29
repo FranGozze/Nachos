@@ -1,13 +1,12 @@
-#ifndef NACHOS_FILESYS_DIRECTORY_HH
-#define NACHOS_FILESYS_DIRECTORY_HH
+#ifndef NACHOS_FILESYS_SYNCHDIRECTORY_HH
+#define NACHOS_FILESYS_SYNCHDIRECTORY_HH
 
 #include "directory.hh"
-#include "threads/lock.hh"
-
+class Lock;
 class SynchDirectory
 {
 public:
-  SynchDirectory(unsigned size, Lock *l);
+  SynchDirectory(unsigned size, Lock *l, unsigned currentSector, unsigned parentSector);
   ~SynchDirectory();
   void FetchFrom(OpenFile *file);
   void WriteBack(OpenFile *file);
@@ -20,9 +19,12 @@ public:
   void Request();
   void Flush();
 
+  bool IsDir(const char *name);
+
+  Lock *lock;
+
 private:
   Directory *directory;
-  Lock *lock;
   unsigned loop;
 };
 

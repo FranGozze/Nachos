@@ -1,9 +1,11 @@
 #include "synchDirectory.hh"
-
-SynchDirectory::SynchDirectory(unsigned size, Lock *l)
+#include "threads/lock.hh"
+SynchDirectory::SynchDirectory(unsigned size, Lock *l, unsigned currentSector, unsigned parentSector)
 {
+  ASSERT(l != nullptr);
   lock = l;
-  directory = new Directory(size);
+  DEBUG('f', "synchDirectory %p\n", lock);
+  directory = new Directory(size, currentSector, parentSector);
   loop = 0;
 }
 SynchDirectory::~SynchDirectory()
@@ -12,8 +14,16 @@ SynchDirectory::~SynchDirectory()
 }
 void SynchDirectory::FetchFrom(OpenFile *file)
 {
+  DEBUG('f', "Fetching directory from file PreIsHeld\n");
+  if (!lock)
+    DEBUG('f', "Lock is null\n");
+
   if (!lock->IsHeldByCurrentThread())
+  {
+    DEBUG('f', "Fetching directory from file PreAcq\n");
     lock->Acquire();
+  }
+  DEBUG('f', "Fetching directory from file, its held\n");
   loop++;
   directory->FetchFrom(file);
 }
@@ -42,7 +52,6 @@ void SynchDirectory::List() const
 }
 void SynchDirectory::Print() const
 {
-
   directory->Print();
 }
 const RawDirectory *SynchDirectory::GetRaw() const
@@ -62,4 +71,9 @@ void SynchDirectory::Flush()
   loop--;
   if (loop == 0)
     lock->Release();
+}
+
+bool SynchDirectory::IsDir(const char *name)
+{
+  return directory->IsDir(name);
 }

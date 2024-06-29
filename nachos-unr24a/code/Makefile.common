@@ -140,6 +140,7 @@ FILESYS_HDR = filesys/directory.hh       \
               filesys/synchDirectory.hh  \
               filesys/synchFile.hh       \
               filesys/synchBitmap.hh     \
+              filesys/directoryTable.hh  \
               filesys/synch_disk.hh      \
               machine/disk.hh
 
@@ -152,6 +153,7 @@ FILESYS_SRC = filesys/directory.cc      \
               filesys/synchDirectory.cc \
               filesys/synchFile.cc      \
               filesys/synchBitmap.cc    \
+              filesys/directoryTable.cc  \
               filesys/synch_disk.cc     \
               machine/disk.cc
 

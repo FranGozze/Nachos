@@ -29,6 +29,7 @@
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
 
 #include "lib/table.hh"
+#include "filesys/open_file.hh"
 extern Table<Thread *> *spaceThreads;
 
 static inline bool
@@ -57,6 +58,9 @@ Thread::Thread(const char *threadName, bool join, int p)
   space = nullptr;
   fileDescriptors = new Table<OpenFile *>;
   pid = spaceThreads->Add(this);
+#ifndef FILESYS_STUB
+  currentDirectory = nullptr;
+#endif
 #endif
 }
 
@@ -91,6 +95,10 @@ Thread::~Thread()
 
   spaceThreads->Remove(pid);
   delete space;
+#ifndef FILESYS_STUB
+  if (currentDirectory != nullptr)
+    delete currentDirectory;
+#endif
 #endif
 
   DEBUG('t', "Deleted thread \"%s\"\n", name);
@@ -369,5 +377,19 @@ void Thread::RestoreUserState()
     machine->WriteRegister(i, userRegisters[i]);
   }
 }
+
+#ifndef FILESYS_STUB
+OpenFile *Thread::GetCurrentDirectory()
+{
+  if (currentDirectory == nullptr)
+    return fileSystem->rootDirectory;
+  return currentDirectory;
+}
+
+void Thread::SetCurrentDirectory(OpenFile *dir)
+{
+  currentDirectory = dir;
+}
+#endif
 
 #endif

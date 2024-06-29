@@ -23,11 +23,10 @@
 /// limitation of liability and disclaimer of warranty provisions.
 
 #include "file_header.hh"
-#include "threads/system.hh"
+// #include "threads/system.hh"
 
 #include <ctype.h>
 #include <stdio.h>
-
 #include "synch_disk.hh"
 extern SynchDisk *synchDisk;
 
@@ -39,6 +38,11 @@ unsigned FileHeader::GetNumSectors()
 unsigned FileHeader::GetNumTables()
 {
   return DivRoundUp(GetNumSectors(), NUM_DIRECT);
+}
+
+unsigned FileHeader::GetInitSector()
+{
+  return indirectTables[0].dataSectors[0];
 }
 
 /// Initialize a fresh file header for a newly created file.  Allocate data

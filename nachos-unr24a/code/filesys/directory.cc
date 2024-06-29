@@ -23,6 +23,7 @@
 #include "directory_entry.hh"
 #include "file_header.hh"
 #include "lib/utility.hh"
+#include "open_file.hh"
 
 #include <stdio.h>
 #include <string.h>
@@ -33,11 +34,23 @@
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
 ///
 /// * `size` is the number of entries in the directory.
-Directory::Directory(unsigned size)
+Directory::Directory(unsigned size, unsigned currentSector, unsigned parentSector)
 {
-  ASSERT(size > 0);
+  ASSERT(size > 2);
   raw.table = new DirectoryEntry[size];
   raw.tableSize = size;
+
+  DEBUG('f', "Creando directorio ./.\n");
+  raw.table[0].inUse = true;
+  strncpy(raw.table[0].name, ".", 3);
+  raw.table[0].sector = currentSector;
+  raw.table[0].isDir = true;
+  raw.table[1].inUse = true;
+  DEBUG('f', "Creando directorio ../.\n");
+  strncpy(raw.table[1].name, "..", 4);
+  raw.table[1].sector = parentSector;
+  raw.table[1].isDir = true;
+
   for (unsigned i = 0; i < raw.tableSize; i++)
   {
     raw.table[i].inUse = false;
@@ -197,4 +210,16 @@ const RawDirectory *
 Directory::GetRaw() const
 {
   return &raw;
+}
+
+bool Directory::IsDir(const char *name)
+{
+  ASSERT(name != nullptr);
+
+  int i = FindIndex(name);
+  if (i != -1)
+  {
+    return raw.table[i].isDir;
+  }
+  return false;
 }

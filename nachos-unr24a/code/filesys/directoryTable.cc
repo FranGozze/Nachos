@@ -1,7 +1,9 @@
 #include "directoryTable.hh"
 #include <string.h>
 #include "lib/utility.hh"
-
+#include "file_header.hh"
+#include "synchDirectory.hh"
+#include "threads/lock.hh"
 DirectoryTable::DirectoryTable()
 {
   table = new Table<DirectoryInfo *>;
@@ -11,7 +13,7 @@ DirectoryTable::~DirectoryTable()
   delete table;
 }
 
-int DirectoryTable::AddDirectory(const char *name)
+int DirectoryTable::AddDirectory(const char *name, OpenFile *file, unsigned currentSector, unsigned parentSector)
 {
   int id;
 
@@ -20,7 +22,11 @@ int DirectoryTable::AddDirectory(const char *name)
 
   DirectoryInfo *info = new DirectoryInfo;
   Lock *lock = new Lock(name);
-  SynchDirectory *synchDir = new SynchDirectory(10, lock);
+
+  SynchDirectory *synchDir = new SynchDirectory(10, lock, currentSector, parentSector);
+  info->synchDir = synchDir;
+
+  info->file = file;
   info->size = 10;
   info->available = true;
   info->nThreads = 1;
@@ -32,7 +38,7 @@ int DirectoryTable::AddDirectory(const char *name)
 
   if ((id = table->Add(info)) == -1)
     delete info;
-
+  DEBUG('f', "id directory: %d\n", id);
   return id;
 }
 void DirectoryTable::RemoveDirectory(int id)
@@ -51,7 +57,18 @@ int DirectoryTable::Find(const char *name)
   }
   return -1;
 }
+
 DirectoryInfo *DirectoryTable::GetDirectoryInfo(int id)
 {
-  return table->Get(id)
+  return table->Get(id);
+}
+
+DirectoryInfo *DirectoryTable::GetDirectoryInfo2(OpenFile *file)
+{
+  for (unsigned i = 0; i < table->SIZE; i++)
+  {
+    if (table->HasKey(i) && table->Get(i)->file == file)
+      return table->Get(i);
+  }
+  return nullptr;
 }

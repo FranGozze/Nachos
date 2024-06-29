@@ -65,5 +65,6 @@ extern Debug debug;
 #define DEBUG_CONT (debug.PrintCont)
 
 const char *sepPath(const char *str, char *path);
+const char *getFilePath(const char *str, char *substr);
 
 #endif

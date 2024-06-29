@@ -11,11 +11,12 @@
 /// limitation of liability and disclaimer of warranty provisions.
 
 #include "open_file.hh"
-#include "file_header.hh"
-#include "threads/system.hh"
-
 #include <string.h>
+#include "threads/system.hh"
 #include "synch_disk.hh"
+#include "synchFile.hh"
+#include "file_header.hh"
+
 extern SynchDisk *synchDisk;
 /// Open a Nachos file for reading and writing.  Bring the file header into
 /// memory while the file is open.

@@ -28,6 +28,7 @@ Lock::Lock(const char *debugName)
 
 Lock::~Lock()
 {
+  DEBUG('z', "Destructor de Lock %s\n", name);
   delete sem;
 }
 
