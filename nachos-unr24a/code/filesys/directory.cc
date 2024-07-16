@@ -41,6 +41,12 @@ Directory::Directory(unsigned size, unsigned currentSector, unsigned parentSecto
   raw.tableSize = size;
 
   DEBUG('f', "Creando directorio ./.\n");
+
+  for (unsigned i = 0; i < raw.tableSize; i++)
+  {
+    raw.table[i].inUse = false;
+  }
+
   raw.table[0].inUse = true;
   strncpy(raw.table[0].name, ".", 3);
   raw.table[0].sector = currentSector;
@@ -50,11 +56,6 @@ Directory::Directory(unsigned size, unsigned currentSector, unsigned parentSecto
   strncpy(raw.table[1].name, "..", 4);
   raw.table[1].sector = parentSector;
   raw.table[1].isDir = true;
-
-  for (unsigned i = 0; i < raw.tableSize; i++)
-  {
-    raw.table[i].inUse = false;
-  }
 }
 
 /// De-allocate directory data structure.
