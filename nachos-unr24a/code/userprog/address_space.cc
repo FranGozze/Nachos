@@ -140,6 +140,7 @@ AddressSpace::~AddressSpace()
   delete[] pageTable;
   delete exe;
 #ifdef SWAP
+  delete swapMap;
   delete swapFile;
 #endif
 }
@@ -257,21 +258,37 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
     fifoList->Append(frame);
 #endif
 #endif
-
+  ASSERT(frame != -1);
   unsigned realAddr = frame * PAGE_SIZE;
   char *mainMemory = machine->mainMemory;
   unsigned vAddr = virtualPage * PAGE_SIZE;
   memset(&mainMemory[realAddr], 0, PAGE_SIZE);
+  pageTable[virtualPage].physicalPage = frame;
+  pageTable[virtualPage].valid = true;
+
+  DEBUG('a', "Pre swapMap->Test\n");
+#ifdef SWAP
+  if (swapMap->Test(virtualPage))
+  {
+    DEBUG('a', "Page is dirty, reading to swap\n");
+    ASSERT(swapFile->ReadAt(&mainMemory[realAddr], PAGE_SIZE, vAddr) == PAGE_SIZE);
+    swapMap->Clear(virtualPage);
+    stats->numSwapInPages++;
+    return frame;
+  }
+#endif
 
   if (!swapMap->Test(virtualPage))
   {
     unsigned nread = 0;
     uint32_t codeSize = exe->GetCodeSize(), codeAddr = exe->GetCodeAddr();
-    if (codeSize > 0 && codeAddr <= vAddr && vAddr <= codeAddr + codeSize)
+    if (codeSize > 0 && codeAddr <= vAddr && vAddr < codeAddr + codeSize)
     {
       unsigned m = min(PAGE_SIZE, (codeAddr + codeSize) - vAddr);
-
-      exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
+      DEBUG('a', "Pre ReadCodeBlock\n");
+      if (m > 0)
+        exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
+      DEBUG('a', "Post ReadCodeBlock\n");
       nread += m;
     }
     uint32_t initDataSize = exe->GetInitDataSize(), initDataAddr = exe->GetInitDataAddr();
@@ -281,26 +298,17 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
       unsigned offset = nread > 0 ? 0 : vAddr - initDataAddr;
       unsigned size = min(initDataSize - offset, PAGE_SIZE - nread);
       DEBUG('z', "size %u, offset: %u, vPage: %u, dataSize: %u , initAddr %u, endAddr %u \n", size, offset, virtualPage, initDataSize, initDataAddr, initDataAddr + initDataSize);
-
-      exe->ReadDataBlock(&mainMemory[realAddr + nread], size, offset);
+      if (size > 0)
+        exe->ReadDataBlock(&mainMemory[realAddr + nread], size, offset);
       nread += size;
     }
     ASSERT(nread <= PAGE_SIZE);
   }
-  else
-  {
-#ifdef SWAP
-    DEBUG('a', "Page is dirty, reading to swap\n");
-    swapFile->ReadAt(&mainMemory[realAddr], PAGE_SIZE, vAddr);
-    swapMap->Clear(virtualPage);
-    stats->numSwapInPages++;
-#endif
-  }
-  pageTable[virtualPage].physicalPage = frame;
-  pageTable[virtualPage].valid = true;
+
   DEBUG('a', "Demand Loaded addr %u\n", realAddr);
   return frame;
 }
+
 #ifdef SWAP
 int AddressSpace::PickVictim()
 {
@@ -342,33 +350,37 @@ void AddressSpace::RemovePage()
   DEBUG('a', "Removing page %u\n", victim);
 
   unsigned vPage = freePhysicalPages->coremapEntries[victim].virtualPage;
+  Thread *t = freePhysicalPages->coremapEntries[victim].thread;
+  AddressSpace *vSpace = t->space;
+  TranslationEntry *entry = &vSpace->pageTable[vPage];
   for (unsigned i = 0; i < TLB_SIZE; i++)
   {
     if (machine->GetMMU()->tlb[i].virtualPage == vPage)
     {
       machine->GetMMU()->tlb[i].valid = false;
       // unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
-      TranslationEntry *entry = &pageTable[vPage];
-      entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
-      entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
-      entry->valid = false;
+      // entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
+      // entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
+      // entry->valid = false;
       entry->use = machine->GetMMU()->tlb[i].use;
       entry->dirty = machine->GetMMU()->tlb[i].dirty;
     }
   }
-  Thread *t = freePhysicalPages->coremapEntries[victim].thread;
-  t->space->pageTable[vPage].virtualPage = t->space->numPages + 1;
+  entry->virtualPage = vSpace->numPages + 1;
 
-  if (t->space->pageTable[vPage].dirty || t->space->swapMap->Test(vPage))
+  // if (a->swapMap && (entry->dirty || !a->swapMap->Test(vPage)))
+  if (entry->dirty || vSpace->swapMap->Test(vPage))
   {
     DEBUG('r', "Page is dirty, writing to swap\n");
     char *mainMemory = machine->mainMemory;
     unsigned realAddr = victim * PAGE_SIZE;
-    t->space->swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE);
-    t->space->swapMap->Mark(vPage);
+    ASSERT(vSpace->swapFile->WriteAt(&mainMemory[realAddr], PAGE_SIZE, vPage * PAGE_SIZE) == PAGE_SIZE);
+    vSpace->swapMap->Mark(vPage);
     stats->numSwapOutPages++;
   }
-  DEBUG('r', "Page removed: %u\n", victim);
+  DEBUG('r', "Page removed: %u from: %d\n", victim, t->pid);
+  entry->dirty = false;
+  entry->valid = false;
 
   freePhysicalPages->Clear(victim);
 }

@@ -1,4 +1,4 @@
-**/.vscode/
+.vscode/
 *.o
 *.coff
 nachos-unr24a/code/vmem/nachos
@@ -28,3 +28,7 @@ nachos-unr24a/code/userland/echo
 nachos-unr24a/code/userland/cp
 nachos-unr24a/code/userland/cat
 nachos-unr24a/code/userland/SWAP.0
+.vscode/settings.json
+nachos-unr24a/code/filesys/SWAP.0
+nachos-unr24a/code/userland/SWAP.1
+

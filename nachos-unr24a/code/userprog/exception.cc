@@ -70,23 +70,23 @@ DefaultHandler(ExceptionType et)
   ASSERT(false);
 }
 
-static inline void getFileName(char *filename, int size = FILE_NAME_MAX_LEN + 1)
+static inline void getFileName(char *filename, const char *name = "", int size = FILE_NAME_MAX_LEN + 1)
 {
   int filenameAddr = machine->ReadRegister(4);
   if (filenameAddr == 0)
   {
-    DEBUG('e', "Error: address to filename string is null.\n");
+    DEBUG('e', "'%s (%d)'Error: address to filename string is null.\n", name, currentThread->pid);
     machine->WriteRegister(2, -1);
   }
 
   if (!ReadStringFromUser(filenameAddr,
                           filename, size))
   {
-    DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
-          FILE_NAME_MAX_LEN);
+    DEBUG('e', "'%s (%d)'Error: filename string too long (maximum is %u bytes).\n",
+          name, currentThread->pid, FILE_NAME_MAX_LEN);
     machine->WriteRegister(2, -1);
   }
-  DEBUG('e', "Filename in getFileName %s .\n", filename);
+  DEBUG('e', "'%s (%d)'Filename in getFileName %s .\n", name, currentThread->pid, filename);
 }
 
 /// Handle a system call exception.
@@ -139,7 +139,7 @@ SyscallHandler(ExceptionType _et)
   case SC_CREATE:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename, FILE_NAME_MAX_LEN + 1);
+    getFileName(filename, "Create", FILE_NAME_MAX_LEN + 1);
     DEBUG('e', "`Create` requested for file `%s`.\n", filename);
     if (fileSystem->Create(filename, 0))
     {
@@ -157,7 +157,7 @@ SyscallHandler(ExceptionType _et)
   case SC_REMOVE:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename);
+    getFileName(filename, "Remove");
     if (fileSystem->Remove(filename))
     {
       DEBUG('e', "Removed file `%s`.\n", filename);
@@ -175,7 +175,7 @@ SyscallHandler(ExceptionType _et)
   case SC_OPEN:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename);
+    getFileName(filename, "Open");
 
     if (OpenFile *file = fileSystem->Open(filename))
     {
@@ -274,7 +274,7 @@ SyscallHandler(ExceptionType _et)
   case SC_EXEC:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename);
+    getFileName(filename, "Exec");
     int joinable = machine->ReadRegister(5);
     OpenFile *file = fileSystem->Open(filename);
     if (file)
@@ -298,7 +298,7 @@ SyscallHandler(ExceptionType _et)
   case SC_EXEC2:
   {
     char filename[FILE_NAME_MAX_LEN + 1];
-    getFileName(filename);
+    getFileName(filename, "Exec2");
     char **args = SaveArgs(machine->ReadRegister(5));
     int joinable = machine->ReadRegister(6);
     OpenFile *file = fileSystem->Open(filename);
@@ -335,14 +335,14 @@ SyscallHandler(ExceptionType _et)
       DEBUG('e', "'Join' not valid processID %d \n", id);
       machine->WriteRegister(2, -1);
     }
-
+    DEBUG('e', "'Join' Finished %d \n", id);
     break;
   }
 #ifndef FILESYS_STUB
   case SC_CD:
   {
     char dirName[FILE_NAME_MAX_LEN + 1];
-    getFileName(dirName);
+    getFileName(dirName, "ChangeDir");
     DEBUG('e', "Changing dir to %s\n", dirName);
     bool success = fileSystem->changeDirectory(dirName);
     if (success)
@@ -368,7 +368,7 @@ SyscallHandler(ExceptionType _et)
   case SC_MKDIR:
   {
     char dirName[FILE_NAME_MAX_LEN + 1];
-    getFileName(dirName);
+    getFileName(dirName, "MakeDir");
     if (fileSystem->CreateDirectory(dirName))
     {
       DEBUG('e', "Succesfully created a new directory with name %s \n", dirName);
@@ -401,6 +401,7 @@ static void PageFaultHandler(ExceptionType et)
   entry->valid = true;
 
 #ifdef DEMAND_LOADING
+  DEBUG('e', "Page fault exception. Pre DL\n");
   if (entry->virtualPage == currentThread->space->numPages + 1)
   {
     entry->physicalPage = currentThread->space->LoadPage(vpn);

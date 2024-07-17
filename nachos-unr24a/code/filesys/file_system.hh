@@ -35,13 +35,10 @@
 #ifndef NACHOS_FILESYS_FILESYSTEM__HH
 #define NACHOS_FILESYS_FILESYSTEM__HH
 
-#include "directory.hh"
-#include "lib/bitmap.hh"
-#include "file_header.hh"
-
 #ifdef FILESYS_STUB // Temporarily implement file system calls as calls to
                     // UNIX, until the real file system implementation is
                     // available.
+#include "open_file.hh"
 
 /// Constant definitions with dummy values.  For the stub filesystem they
 /// are not required, but system information tools expects them to be
@@ -92,6 +89,9 @@ public:
 #else // FILESYS
 
 #include "directory_entry.hh"
+#include "directory.hh"
+#include "lib/bitmap.hh"
+#include "file_header.hh"
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
