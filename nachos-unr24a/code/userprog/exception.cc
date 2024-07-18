@@ -398,8 +398,8 @@ static void PageFaultHandler(ExceptionType et)
   unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
   unsigned vpn = vAddr / PAGE_SIZE;
   TranslationEntry *entry = &currentThread->space->pageTable[vpn];
-  entry->valid = true;
 
+  // entry->valid = true;
 #ifdef DEMAND_LOADING
   DEBUG('e', "Page fault exception. Pre DL\n");
   if (entry->virtualPage == currentThread->space->numPages + 1)

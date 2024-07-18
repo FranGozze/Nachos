@@ -60,7 +60,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 #ifndef DEMAND_LOADING
     pageTable[i].physicalPage = freePhysicalPages->Find();
 #endif
+#ifdef SWAP
+    pageTable[i].valid = false;
+#else
     pageTable[i].valid = true;
+#endif
     pageTable[i].use = false;
     pageTable[i].dirty = false;
     pageTable[i].readOnly = false;
@@ -186,9 +190,9 @@ void AddressSpace::SaveState()
     machine->GetMMU()->tlb[i].valid = false;
     unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
     TranslationEntry *entry = &pageTable[vPage];
-    entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
-    entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
-    entry->valid = false;
+    // entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
+    // entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
+    // entry->valid = false;
     entry->use = machine->GetMMU()->tlb[i].use;
     entry->dirty = machine->GetMMU()->tlb[i].dirty;
   }
@@ -278,32 +282,28 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
   }
 #endif
 
-  if (!swapMap->Test(virtualPage))
+  unsigned nread = 0;
+  uint32_t codeSize = exe->GetCodeSize(), codeAddr = exe->GetCodeAddr();
+  if (codeSize > 0 && codeAddr <= vAddr && vAddr < codeAddr + codeSize)
   {
-    unsigned nread = 0;
-    uint32_t codeSize = exe->GetCodeSize(), codeAddr = exe->GetCodeAddr();
-    if (codeSize > 0 && codeAddr <= vAddr && vAddr < codeAddr + codeSize)
-    {
-      unsigned m = min(PAGE_SIZE, (codeAddr + codeSize) - vAddr);
-      DEBUG('a', "Pre ReadCodeBlock\n");
-      if (m > 0)
-        exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
-      DEBUG('a', "Post ReadCodeBlock\n");
-      nread += m;
-    }
-    uint32_t initDataSize = exe->GetInitDataSize(), initDataAddr = exe->GetInitDataAddr();
-
-    if (nread < PAGE_SIZE && initDataSize > 0 && initDataAddr <= vAddr + nread && vAddr + nread < initDataAddr + initDataSize)
-    {
-      unsigned offset = nread > 0 ? 0 : vAddr - initDataAddr;
-      unsigned size = min(initDataSize - offset, PAGE_SIZE - nread);
-      DEBUG('z', "size %u, offset: %u, vPage: %u, dataSize: %u , initAddr %u, endAddr %u \n", size, offset, virtualPage, initDataSize, initDataAddr, initDataAddr + initDataSize);
-      if (size > 0)
-        exe->ReadDataBlock(&mainMemory[realAddr + nread], size, offset);
-      nread += size;
-    }
-    ASSERT(nread <= PAGE_SIZE);
+    unsigned m = min(PAGE_SIZE, (codeAddr + codeSize) - vAddr);
+    DEBUG('a', "Pre ReadCodeBlock\n");
+    exe->ReadCodeBlock(&mainMemory[realAddr], m, vAddr);
+    DEBUG('a', "Post ReadCodeBlock\n");
+    nread += m;
   }
+  uint32_t initDataSize = exe->GetInitDataSize(), initDataAddr = exe->GetInitDataAddr();
+
+  if (nread < PAGE_SIZE && initDataSize > 0 && initDataAddr <= vAddr + nread && vAddr + nread < initDataAddr + initDataSize)
+  {
+    unsigned offset = nread > 0 ? 0 : vAddr - initDataAddr;
+    unsigned size = min(initDataSize - offset, PAGE_SIZE - nread);
+    DEBUG('z', "size %u, offset: %u, vPage: %u, dataSize: %u , initAddr %u, endAddr %u \n", size, offset, virtualPage, initDataSize, initDataAddr, initDataAddr + initDataSize);
+
+    exe->ReadDataBlock(&mainMemory[realAddr + nread], size, offset);
+    nread += size;
+  }
+  ASSERT(nread <= PAGE_SIZE);
 
   DEBUG('a', "Demand Loaded addr %u\n", realAddr);
   return frame;
