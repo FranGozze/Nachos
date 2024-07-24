@@ -20,6 +20,7 @@ public:
   void Flush();
 
   bool IsDir(const char *name);
+  unsigned GetParentSector();
 
   Lock *lock;
 

@@ -42,7 +42,7 @@ unsigned FileHeader::GetNumTables()
 
 unsigned FileHeader::GetInitSector()
 {
-  return indirectTables[0].dataSectors[0];
+  return indirectTables[0].dataSectors[0] - (sizeof(int));
 }
 
 /// Initialize a fresh file header for a newly created file.  Allocate data

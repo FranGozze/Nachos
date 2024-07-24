@@ -55,3 +55,13 @@ FileInfo *OpenFilesTable::GetFileInfo(int id)
 {
   return table->Get(id);
 }
+
+int OpenFilesTable::FindBySector(int sector)
+{
+  for (unsigned i = 0; i < table->SIZE; i++)
+  {
+    if (table->HasKey(i) && table->Get(i)->hdr->GetInitSector() == sector)
+      return i;
+  }
+  return -1;
+};

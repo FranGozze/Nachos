@@ -6,16 +6,23 @@
 
 #define NULL ((void *)0)
 
-static inline unsigned
-strlen(const char *s)
+unsigned strlen(const char *s)
 {
-  // TODO: how to make sure that `s` is not `NULL`?
-
   unsigned i;
   for (i = 0; s[i] != '\0'; i++)
-  {
-  }
+    ;
   return i;
+}
+
+int strcmp(char *s1_, const char *s2)
+{
+  unsigned char *s1 = (unsigned char *)s1_;
+  while (*s1 && *s1 == *s2)
+  {
+    s1++;
+    s2++;
+  }
+  return (unsigned char)*s1 - (unsigned char)*s2;
 }
 
 static inline void
@@ -56,6 +63,44 @@ ReadLine(char *buffer, unsigned size, OpenFileId input)
     }
   }
   return i;
+}
+
+static int SpecialComms(char *line, char **argv, unsigned argvSize)
+{
+  if (strcmp(line, "exit") == 0)
+    Halt();
+
+  if (strcmp(line, "mkdir") == 0)
+  {
+    if (argv[1] == NULL)
+    {
+      WriteError("missing argument.", CONSOLE_OUTPUT);
+      return 1;
+    }
+    Write("creating dir", 12, CONSOLE_OUTPUT);
+    Mkdir(argv[1]);
+    return 1;
+  }
+
+  if (strcmp(line, "cd") == 0)
+  {
+    if (argv[1] == NULL)
+    {
+      WriteError("missing argument.", CONSOLE_OUTPUT);
+      return 1;
+    }
+    Write("change dir", 10, CONSOLE_OUTPUT);
+    Cd(argv[1]);
+    return 1;
+  }
+
+  if (strcmp(line, "ls") == 0)
+  {
+    Ls();
+    return 1;
+  }
+
+  return 0;
 }
 
 static int
@@ -128,26 +173,18 @@ int main(void)
       continue;
     }
 
-    // Comment and uncomment according to whether command line arguments
-    // are given in the system call or not.
+    if (SpecialComms(line, argv, MAX_ARG_COUNT))
+      continue;
     if (!join)
       for (int i = 0; i < strlen(line); i++)
         line[i] = line[i + 1];
 
     const int newProc = Exec2(line, argv, join);
-    // const SpaceId newProc = Exec(line, argv);
-
-    // TODO: check for errors when calling `Exec`; this depends on how
-    //       errors are reported.
 
     if (join)
       Join(newProc);
-    // TODO: is it necessary to check for errors after `Join` too, or
-    //       can you be sure that, with the implementation of the system
-    //       call handler you made, it will never give an error?; what
-    //       happens if tomorrow the implementation changes and new
-    //       error conditions appear?
   }
+  // }
 
   // Never reached.
   return -1;

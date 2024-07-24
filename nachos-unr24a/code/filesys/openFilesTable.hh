@@ -34,6 +34,7 @@ public:
   int Find(const char *name);
 
   FileInfo *GetFileInfo(int id);
+  int FindBySector(int sector);
 
 private:
   Table<FileInfo *> *table;

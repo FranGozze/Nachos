@@ -306,7 +306,10 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
           DEBUG('f', "Directory fileId: %d, name: %s\n", fid, openFiles->GetFileInfo(actualDirectory->GetId())->name);
           OpenFile *newDir = new OpenFile(h, newFile, fid);
           unsigned did = directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
+          SynchDirectory *newDirSynch = directoryTable->GetDirectoryInfo(did)->synchDir;
+          newDirSynch->WriteBack(newDir);
           DEBUG('f', "Directory id: %d, name: %s\n", did, name);
+          DEBUG('f', "currentSector: %u, parentSector: %u\n", sector, actualDirectory->GetHdr()->GetInitSector());
         }
         DEBUG('f', "actualDir write.\n");
         dir->WriteBack(actualDirectory);
@@ -789,9 +792,24 @@ OpenFile *FileSystem::OpenDir(const char *name)
       DirectoryInfo *dinfo = directoryTable->GetDirectoryInfo(did);
       return dinfo->file;
     }
+    if (strcmp(name, ".") == 0)
+    {
+      return actualDirectory;
+    }
 
     FileHeader *hdr = new FileHeader;
     hdr->FetchFrom(sector);
+    if (strcmp(name, "..") == 0)
+    {
+      unsigned fid;
+      DEBUG('f', "parent sector: %u\n", dir->GetParentSector());
+      if ((fid = openFiles->FindBySector(dir->GetParentSector())) != -1)
+      {
+        FileInfo *finfo = openFiles->GetFileInfo(fid);
+        DEBUG('f', "moving to %s (fid: %u)\n", finfo->name, fid);
+        return new OpenFile(finfo->hdr, finfo->synchFile, fid);
+      }
+    }
 
     SynchFile *synchFile = nullptr;
     unsigned fid;

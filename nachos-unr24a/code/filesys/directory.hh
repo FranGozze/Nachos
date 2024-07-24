@@ -65,6 +65,8 @@ public:
   const RawDirectory *GetRaw() const;
   bool IsDir(const char *name);
 
+  unsigned GetParentSector();
+
 private:
   /// Find the index into the directory table corresponding to `name`.
   int FindIndex(const char *name);

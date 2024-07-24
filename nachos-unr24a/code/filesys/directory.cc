@@ -40,19 +40,19 @@ Directory::Directory(unsigned size, unsigned currentSector, unsigned parentSecto
   raw.table = new DirectoryEntry[size];
   raw.tableSize = size;
 
-  DEBUG('f', "Creando directorio ./.\n");
-
-  for (unsigned i = 0; i < raw.tableSize; i++)
+  for (unsigned i = 2; i < raw.tableSize; i++)
   {
     raw.table[i].inUse = false;
   }
 
+  DEBUG('f', "Creando directorio ./. (sector %u)\n", currentSector);
   raw.table[0].inUse = true;
   strncpy(raw.table[0].name, ".", 3);
   raw.table[0].sector = currentSector;
   raw.table[0].isDir = true;
+
   raw.table[1].inUse = true;
-  DEBUG('f', "Creando directorio ../.\n");
+  DEBUG('f', "Creando directorio ../. (sector %u)\n", parentSector);
   strncpy(raw.table[1].name, "..", 4);
   raw.table[1].sector = parentSector;
   raw.table[1].isDir = true;
@@ -134,11 +134,12 @@ bool Directory::Add(const char *name, int newSector, bool isDir)
     return false;
   }
 
-  for (unsigned i = 0; i < raw.tableSize; i++)
+  for (unsigned i = 2; i < raw.tableSize; i++)
   {
     if (!raw.table[i].inUse)
     {
       raw.table[i].inUse = true;
+      DEBUG('0', "Adding file %s at sector %u in %u\n", name, newSector, i);
       strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
       raw.table[i].sector = newSector;
       raw.table[i].isDir = isDir;
@@ -228,4 +229,9 @@ bool Directory::IsDir(const char *name)
     return raw.table[i].isDir;
   }
   return false;
+}
+
+unsigned Directory::GetParentSector()
+{
+  return raw.table[1].sector;
 }

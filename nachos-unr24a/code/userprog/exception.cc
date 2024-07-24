@@ -382,6 +382,12 @@ SyscallHandler(ExceptionType _et)
 
     break;
   }
+#else
+  case SC_CD:
+  case SC_LS:
+  case SC_MKDIR:
+    machine->WriteRegister(2, -1);
+    break;
 #endif
   default:
     fprintf(stderr, "Unexpected system call: id %d.\n", scid);

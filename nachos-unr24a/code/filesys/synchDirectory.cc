@@ -77,3 +77,8 @@ bool SynchDirectory::IsDir(const char *name)
 {
   return directory->IsDir(name);
 }
+
+unsigned SynchDirectory::GetParentSector()
+{
+  return directory->GetParentSector();
+}
