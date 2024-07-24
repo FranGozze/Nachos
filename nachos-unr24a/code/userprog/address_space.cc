@@ -115,6 +115,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 #ifdef SWAP
   char swapFileName[FILE_NAME_MAX_LEN];
   snprintf(swapFileName, FILE_NAME_MAX_LEN, "SWAP.%u", currentThread->pid);
+  fileSystem->Remove(swapFileName);
   if (fileSystem->Create(swapFileName, 0) == false)
   {
     DEBUG('a', "Error creating swap file\n");
