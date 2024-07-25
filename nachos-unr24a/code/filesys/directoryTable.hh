@@ -30,6 +30,7 @@ public:
   void RemoveDirectory(int id);
 
   int Find(const char *name);
+  int FindFID(int fid);
 
   DirectoryInfo *GetDirectoryInfo(int id);
   DirectoryInfo *GetDirectoryInfo2(OpenFile *file);

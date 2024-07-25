@@ -521,8 +521,12 @@ bool FileSystem::Extend(unsigned newSize, unsigned id)
 /// List all the files in the file system directory.
 void FileSystem::List()
 {
+  DEBUG('f', "Listing directory 1.\n");
   OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
+  DEBUG('f', "Listing directory 2. (%d)\n", actualDirectory->GetId());
   DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
+  DEBUG('f', "Listing directory 3.\n");
+  ASSERT(dInfo != nullptr);
   SynchDirectory *dir = dInfo->synchDir;
   DEBUG('f', "Listing directory %s.\n", dInfo->name);
   dir->FetchFrom(dInfo->file);
@@ -772,6 +776,10 @@ OpenFile *FileSystem::OpenDir(const char *name)
   if (sector < 0)
     dir->List();
   bool isDir = true;
+
+  if (strcmp(name, ".") == 0)
+    return actualDirectory;
+
   if (sector >= 0)
   {
     isDir = dir->IsDir(name);
@@ -792,22 +800,25 @@ OpenFile *FileSystem::OpenDir(const char *name)
       DirectoryInfo *dinfo = directoryTable->GetDirectoryInfo(did);
       return dinfo->file;
     }
-    if (strcmp(name, ".") == 0)
-    {
-      return actualDirectory;
-    }
 
     FileHeader *hdr = new FileHeader;
     hdr->FetchFrom(sector);
     if (strcmp(name, "..") == 0)
     {
       unsigned fid;
-      DEBUG('f', "parent sector: %u\n", dir->GetParentSector());
+      DEBUG('f', "parent sector: %u . Actual sector: %d\n", dir->GetParentSector(), sector);
       if ((fid = openFiles->FindBySector(dir->GetParentSector())) != -1)
       {
+
         FileInfo *finfo = openFiles->GetFileInfo(fid);
         DEBUG('f', "moving to %s (fid: %u)\n", finfo->name, fid);
-        return new OpenFile(finfo->hdr, finfo->synchFile, fid);
+        newDir = new OpenFile(hdr, finfo->synchFile, fid);
+        return newDir;
+      }
+      else
+      {
+        DEBUG('f', "didnt found parent. Sector: %u\n", dir->GetParentSector());
+        ASSERT(false);
       }
     }
 
@@ -875,7 +886,7 @@ bool FileSystem::changeDirectory(const char *name)
   if (result)
   {
     currentThread->SetCurrentDirectory(newDir);
-    DEBUG('e', "Changed directory to \"%s\".\n", name);
+    DEBUG('e', "Changed directory to \"%s (id: %d)\".\n", name, newDir->GetId());
   }
   else
   {

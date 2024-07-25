@@ -58,6 +58,16 @@ int DirectoryTable::Find(const char *name)
   return -1;
 }
 
+int DirectoryTable::FindFID(int fid)
+{
+  for (unsigned i = 0; i < table->SIZE; i++)
+  {
+    if (table->HasKey(i) && table->Get(i)->file->GetId() == fid)
+      return i;
+  }
+  return -1;
+}
+
 DirectoryInfo *DirectoryTable::GetDirectoryInfo(int id)
 {
   return table->Get(id);
@@ -65,10 +75,12 @@ DirectoryInfo *DirectoryTable::GetDirectoryInfo(int id)
 
 DirectoryInfo *DirectoryTable::GetDirectoryInfo2(OpenFile *file)
 {
+  DEBUG('z', "Table Size %u\n", table->SIZE);
   for (unsigned i = 0; i < table->SIZE; i++)
   {
-    DEBUG('z', "Comparing %p with %p\n", table->Get(i)->file, file);
-    if (table->HasKey(i) && table->Get(i)->file == file)
+    if (table->HasKey(i))
+      DEBUG('z', "Comparing %p with %p\n", table->Get(i)->file, file);
+    if (table->HasKey(i) && table->Get(i)->file->GetId() == file->GetId())
     {
       DEBUG('z', "equal %d\n", i);
       return table->Get(i);
