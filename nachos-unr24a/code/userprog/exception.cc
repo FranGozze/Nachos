@@ -407,14 +407,14 @@ static void PageFaultHandler(ExceptionType et)
 
   // entry->valid = true;
 #ifdef DEMAND_LOADING
-  DEBUG('e', "Page fault exception. Pre DL\n");
+  // DEBUG('e', "Page fault exception. Pre DL\n");
   if (entry->virtualPage == currentThread->space->numPages + 1)
   {
     entry->physicalPage = currentThread->space->LoadPage(vpn);
     entry->virtualPage = vpn;
   }
 #endif
-  DEBUG('e', "Page fault exception2.\n");
+  // DEBUG('e', "Page fault exception2.\n");
   machine->GetMMU()->TLBLoadEntry(entry);
 }
 

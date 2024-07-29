@@ -313,11 +313,11 @@ unsigned AddressSpace::LoadPage(unsigned virtualPage)
 #ifdef SWAP
 int AddressSpace::PickVictim()
 {
-  int victim = -1;
+  int victim = -1, len = machine->GetNumPhysicalPages();
 #ifdef PRPOLICY_FIFO
   ASSERT(!fifoList->IsEmpty());
 
-  victim = fifoList->Pop();
+  return fifoList->Pop() % len;
 
 #elif PRPOLICY_CLOCK
   //  (use, dirty)
@@ -334,15 +334,14 @@ int AddressSpace::PickVictim()
       if (i == 1)
         pageTable[nextVictim].use = 0;
 
-      nextVictim = (nextVictim + 1) % machine->GetNumPhysicalPages();
+      nextVictim = (nextVictim + 1) % len;
     } while (nextVictim != oldVictim && victim == -1);
   }
+  return victim % len;
 
 #else // random
-  victim = SystemDep::Random();
+  return SystemDep::Random() % len;
 #endif
-  DEBUG('a', "Victim %u\n", victim);
-  return victim % machine->GetNumPhysicalPages();
 }
 
 void AddressSpace::RemovePage()
@@ -359,18 +358,13 @@ void AddressSpace::RemovePage()
     if (machine->GetMMU()->tlb[i].virtualPage == vPage)
     {
       machine->GetMMU()->tlb[i].valid = false;
-      // unsigned vPage = machine->GetMMU()->tlb[i].virtualPage;
-      // entry->virtualPage = machine->GetMMU()->tlb[i].virtualPage;
-      // entry->physicalPage = machine->GetMMU()->tlb[i].physicalPage;
-      // entry->valid = false;
       entry->use = machine->GetMMU()->tlb[i].use;
       entry->dirty = machine->GetMMU()->tlb[i].dirty;
     }
   }
   entry->virtualPage = vSpace->numPages + 1;
 
-  // if (a->swapMap && (entry->dirty || !a->swapMap->Test(vPage)))
-  if (entry->dirty || vSpace->swapMap->Test(vPage))
+  if (entry->dirty || !vSpace->swapMap->Test(vPage))
   {
     DEBUG('r', "Page is dirty, writing to swap\n");
     char *mainMemory = machine->mainMemory;
