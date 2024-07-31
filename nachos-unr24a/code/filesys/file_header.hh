@@ -70,9 +70,10 @@ public:
 
   bool Extend(unsigned newSize, Bitmap *bitMap);
 
+  IndirectionTable indirectTables[NUM_INDIRECT];
+
 private:
   RawFileHeader raw;
-  IndirectionTable indirectTables[NUM_INDIRECT];
 };
 
 #endif
