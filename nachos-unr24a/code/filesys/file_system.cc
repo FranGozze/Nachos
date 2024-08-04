@@ -239,6 +239,7 @@ bool FileSystem::CreateFileDirectory(const char *name, unsigned initialSize, boo
       return true;
     }
   }
+  return false;
 }
 
 bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir)
@@ -351,40 +352,59 @@ FileSystem::Open(const char *name)
   OpenFile *openFile = nullptr;
   if ((fid = openFiles->Find(name)) == -1)
   {
-    OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
-    DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
-    if (dInfo == nullptr)
-      DEBUG('f', "'open' dInfo is null, id: %d\n", actualDirectory->GetId());
-    else
+
+    char path[strlen(name) + 1];
+    const char *fName = sepPath(name, path);
+    if (strcmp(path, "") == 0)
     {
-      DEBUG('f', "'Open' dInfo size: %d, file: %p , dir: %p\n", dInfo->size, dInfo->file, dInfo->synchDir);
-    }
-
-    SynchDirectory *dir = dInfo->synchDir;
-
-    DEBUG('f', "Opening file %s\n", name);
-    dir->FetchFrom(dInfo->file);
-    int sector = dir->Find(name);
-    if (sector >= 0)
-    {
-      FileHeader *hdr = new FileHeader;
-      hdr->FetchFrom(sector);
-
-      SynchFile *synchFile = new SynchFile;
-      DEBUG('f', "File %s opened\n", name);
-      fid = openFiles->AddFile(name, hdr, synchFile);
-      DEBUG('f', "File %s opened with fid %d\n", name, fid);
-      if (fid != -1)
-        openFile = new OpenFile(hdr, synchFile, fid); // `name` was found in directory.
+      OpenFile *actualDirectory = currentThread->GetCurrentDirectory();
+      DirectoryInfo *dInfo = directoryTable->GetDirectoryInfo2(actualDirectory);
+      if (dInfo == nullptr)
+        DEBUG('f', "'open' dInfo is null, id: %d\n", actualDirectory->GetId());
       else
       {
-        delete hdr;
-        delete synchFile;
+        DEBUG('f', "'Open' dInfo size: %d, file: %p , dir: %p\n", dInfo->size, dInfo->file, dInfo->synchDir);
+      }
+
+      SynchDirectory *dir = dInfo->synchDir;
+
+      DEBUG('f', "Opening file %s\n", name);
+      dir->FetchFrom(dInfo->file);
+      int sector = dir->Find(name);
+      if (sector >= 0)
+      {
+        FileHeader *hdr = new FileHeader;
+        hdr->FetchFrom(sector);
+
+        SynchFile *synchFile = new SynchFile;
+        DEBUG('f', "File %s opened\n", name);
+        fid = openFiles->AddFile(name, hdr, synchFile);
+        DEBUG('f', "File %s opened with fid %d\n", name, fid);
+        if (fid != -1)
+          openFile = new OpenFile(hdr, synchFile, fid); // `name` was found in directory.
+        else
+        {
+          delete hdr;
+          delete synchFile;
+        }
+      }
+      DEBUG('f', "File %s in sector %d\n", name, sector);
+      dir->Flush();
+      // delete dir;
+    }
+    else
+    {
+      OpenFile *actual = getActualDirectory();
+      if (!changeDirectory(path))
+        return NULL;
+
+      DEBUG('f', "Pre second if\n");
+      if (OpenFile *_file = Open(fName))
+      {
+        currentThread->SetCurrentDirectory(actual);
+        return _file;
       }
     }
-    DEBUG('f', "File %s in sector %d\n", name, sector);
-    dir->Flush();
-    // delete dir;
   }
   // If the file is already open, return the file.
   else
