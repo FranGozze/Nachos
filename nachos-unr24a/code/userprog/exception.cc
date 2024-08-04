@@ -282,6 +282,10 @@ SyscallHandler(ExceptionType _et)
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
       t->space = new AddressSpace(file);
+#ifndef FILESYS_STUB
+      t->SetCurrentDirectory(currentThread->GetCurrentDirectory());
+#endif
+
       t->Fork(StartProcess, nullptr);
       DEBUG('e', "thread scheduled: %d \n", t->pid);
       machine->WriteRegister(2, t->pid);
@@ -309,7 +313,9 @@ SyscallHandler(ExceptionType _et)
       t->space = new AddressSpace(file);
       for (int i = 0; args[i] != NULL; i++)
         DEBUG('e', "args %s \n", args[i]);
-
+#ifndef FILESYS_STUB
+      t->SetCurrentDirectory(currentThread->GetCurrentDirectory());
+#endif
       t->Fork(StartProcess, args);
 
       DEBUG('e', "thread scheduled: %d \n", t->pid);

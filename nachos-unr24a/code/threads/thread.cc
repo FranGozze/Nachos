@@ -145,9 +145,6 @@ int Thread::Join()
 
   DEBUG('s', "Saliendo del hilo %s desde hilo: %s\"\n", name, currentThread->GetName());
   return msg;
-  // Debemos forzar el cambio de contexto para evitar que el thread que estaba
-  // esperando termine antes de eliminar el thread.
-  // currentThread->Yield();
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
