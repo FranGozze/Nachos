@@ -349,7 +349,7 @@ FileSystem::Open(const char *name)
 {
   ASSERT(name != nullptr);
   int fid;
-  OpenFile *openFile = nullptr;
+  OpenFile *openFile = NULL;
   if ((fid = openFiles->Find(name)) == -1)
   {
 
@@ -390,7 +390,6 @@ FileSystem::Open(const char *name)
       }
       DEBUG('f', "File %s in sector %d\n", name, sector);
       dir->Flush();
-      // delete dir;
     }
     else
     {
@@ -429,7 +428,7 @@ void FileSystem::Close(int fid)
     if (!finfo->available)
       this->Delete(finfo->name);
     delete finfo->hdr;
-    delete finfo->synchFile;
+    // delete finfo->synchFile;
     openFiles->RemoveFile(fid);
   }
 }

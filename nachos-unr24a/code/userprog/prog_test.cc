@@ -29,7 +29,7 @@ void StartProcess(const char *filename)
     return;
   }
 
-  AddressSpace *space = new AddressSpace(executable);
+  AddressSpace *space = new AddressSpace(executable, currentThread->pid);
   currentThread->space = space;
   // #ifndef DEMAND_LOADING
   //   delete executable;

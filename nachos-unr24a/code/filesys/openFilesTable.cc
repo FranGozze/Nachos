@@ -36,6 +36,7 @@ int OpenFilesTable::AddFile(const char *name, FileHeader *hdr, SynchFile *synch)
 void OpenFilesTable::RemoveFile(int id)
 {
   FileInfo *info = table->Remove(id);
+  info->synchFile = NULL;
   delete info;
 }
 

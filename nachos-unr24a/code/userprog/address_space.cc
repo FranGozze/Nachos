@@ -18,7 +18,7 @@
 /// First, set up the translation from program memory to physical memory.
 /// For now, this is really simple (1:1), since we are only uniprogramming,
 /// and we have a single unsegmented page table.
-AddressSpace::AddressSpace(OpenFile *executable_file)
+AddressSpace::AddressSpace(OpenFile *executable_file, int pid)
 {
   ASSERT(executable_file != nullptr);
 
@@ -114,7 +114,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
 #ifdef SWAP
   char swapFileName[FILE_NAME_MAX_LEN];
-  snprintf(swapFileName, FILE_NAME_MAX_LEN, "SWAP.%u", currentThread->pid);
+  snprintf(swapFileName, FILE_NAME_MAX_LEN, "SWAP.%u", pid);
+  DEBUG('a', "Creating swap file %s\n", swapFileName);
   fileSystem->Remove(swapFileName);
   if (fileSystem->Create(swapFileName, 0) == false)
   {

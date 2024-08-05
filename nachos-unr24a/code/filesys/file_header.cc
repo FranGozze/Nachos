@@ -217,10 +217,12 @@ bool FileHeader::Extend(unsigned newSize, Bitmap *bitMap)
   DEBUG('f', "Extending file to %u bytes.\n", newSize);
   unsigned numSectors = GetNumSectors();
   unsigned numTables = GetNumTables();
+  unsigned totalSectors = numSectors + numTables;
+
   unsigned newNumSectors = DivRoundUp(newSize, SECTOR_SIZE);
   unsigned newNumTables = DivRoundUp(newNumSectors, NUM_DIRECT);
-  unsigned newSectors = newNumSectors - numSectors;
-  unsigned newTables = newNumTables - numTables;
+
+  unsigned newTotalSectors = newNumSectors + newNumTables;
 
   if (numSectors == newNumSectors)
   {
@@ -228,23 +230,33 @@ bool FileHeader::Extend(unsigned newSize, Bitmap *bitMap)
     return true;
   }
 
-  if (bitMap->CountClear() < newSectors - numSectors)
+  if (bitMap->CountClear() < newTotalSectors - totalSectors)
   {
+    DEBUG('f', "Not enough space to extend file. NewSectors: %u, numSectors: %u, total: %u\n", newTotalSectors, totalSectors, newTotalSectors - totalSectors);
     return false; // Not enough space.
   }
 
-  for (unsigned i = numTables; i < newTables; i++)
+  // Create new indirection tables if necessary
+  for (unsigned i = numTables; i < newNumTables; i++)
   {
     raw.tableSectors[i] = bitMap->Find();
-    unsigned size = newSectors < NUM_DIRECT ? newSectors : NUM_DIRECT;
+  }
 
-    for (unsigned j = 0; j < size; j++)
-    {
-      indirectTables[i].dataSectors[j] = bitMap->Find();
-    }
-    newSectors -= NUM_DIRECT;
+  // Find the index in the table where we should start writing
+
+  unsigned tableNum = DivRoundDown(numSectors, NUM_DIRECT);
+  unsigned offsetInTable = raw.numBytes - (tableNum * NUM_DIRECT * SECTOR_SIZE);
+  unsigned indexInTable = DivRoundDown(offsetInTable, SECTOR_SIZE);
+
+  // Add missing sectors
+  for (unsigned i = numSectors; i < newNumSectors; i++)
+  {
+    unsigned table = DivRoundDown(i, NUM_DIRECT);
+    indirectTables[table].dataSectors[indexInTable++] = bitMap->Find();
+    indexInTable %= NUM_DIRECT;
   }
 
   raw.numBytes = newSize;
+
   return true;
 }

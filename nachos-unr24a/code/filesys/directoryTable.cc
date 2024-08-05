@@ -44,6 +44,8 @@ int DirectoryTable::AddDirectory(const char *name, OpenFile *file, unsigned curr
 void DirectoryTable::RemoveDirectory(int id)
 {
   DirectoryInfo *info = table->Remove(id);
+  info->synchDir = NULL;
+  info->file = NULL;
   delete info;
 }
 int DirectoryTable::Find(const char *name)

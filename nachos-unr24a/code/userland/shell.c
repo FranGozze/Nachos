@@ -180,8 +180,9 @@ int main(void)
         line[i] = line[i + 1];
 
     const int newProc = Exec2(line, argv, join);
-
-    if (join)
+    if (newProc == -1)
+      WriteError("Error: could not execute the command.", OUTPUT);
+    else if (join)
       Join(newProc);
   }
   // }

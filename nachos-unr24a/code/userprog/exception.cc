@@ -176,7 +176,6 @@ SyscallHandler(ExceptionType _et)
   {
     char filename[FILE_NAME_MAX_LEN + 1];
     getFileName(filename, "Open");
-
     if (OpenFile *file = fileSystem->Open(filename))
     {
       // el +2 es porque 0 y 1 estan reservados para consola
@@ -281,7 +280,7 @@ SyscallHandler(ExceptionType _et)
     {
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
-      t->space = new AddressSpace(file);
+      t->space = new AddressSpace(file, t->pid);
 #ifndef FILESYS_STUB
       t->SetCurrentDirectory(currentThread->GetCurrentDirectory());
 #endif
@@ -310,7 +309,7 @@ SyscallHandler(ExceptionType _et)
     {
       Thread *t = new Thread(filename, joinable, currentThread->GetPriority());
       DEBUG('e', "thread created \n");
-      t->space = new AddressSpace(file);
+      t->space = new AddressSpace(file, t->pid);
       for (int i = 0; args[i] != NULL; i++)
         DEBUG('e', "args %s \n", args[i]);
 #ifndef FILESYS_STUB
