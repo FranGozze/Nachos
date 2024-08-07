@@ -309,6 +309,7 @@ bool FileSystem::CreateAtomic(const char *name, unsigned initialSize, bool isDir
           OpenFile *newDir = new OpenFile(h, newFile, fid);
           unsigned did = directoryTable->AddDirectory(name, newDir, sector, actualDirectory->GetHdr()->GetInitSector());
           SynchDirectory *newDirSynch = directoryTable->GetDirectoryInfo(did)->synchDir;
+          newDirSynch->Request();
           newDirSynch->WriteBack(newDir);
           DEBUG('f', "Directory id: %d, name: %s\n", did, name);
           DEBUG('f', "currentSector: %u, parentSector: %u\n", sector, actualDirectory->GetHdr()->GetInitSector());
